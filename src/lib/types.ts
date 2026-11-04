@@ -190,6 +190,15 @@ export type HeroSlide = {
   glow: string;
   /** cor do selo acima do título */
   eyebrowColor: string;
+  /**
+   * Foto própria. "banner": a foto é o banner inteiro (arte pronta, clicável).
+   * "lado": a foto entra no lugar do aparelho, com o texto ao lado. Vazio: texto + produto.
+   */
+  imageMode?: "banner" | "lado";
+  /** foto para computador (e celular, se não tiver a de celular) */
+  image?: string;
+  /** foto para celular (opcional) */
+  imageMobile?: string;
 };
 
 export type ShelfConfig = {

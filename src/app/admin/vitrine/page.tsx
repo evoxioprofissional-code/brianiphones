@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, ExternalLink, Megaphone, Palette, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Loader2, Megaphone, Palette, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { saveStorefront, useDB } from "@/lib/store";
 import { DEFAULT_STOREFRONT } from "@/lib/defaults";
 import { CATEGORY_LABEL } from "@/lib/site";
@@ -27,6 +27,8 @@ import {
 import { ProductMedia } from "@/components/site/ProductMedia";
 import { DeviceArt } from "@/components/site/DeviceArt";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/image";
+import { hasSupabase, uploadImage } from "@/lib/supabase";
 
 type Tab = "banner" | "vitrines" | "categorias" | "vantagens" | "aviso" | "cores";
 
@@ -226,18 +228,36 @@ function BannerTab({ sf, setSf, products }: TabProps & { products: Product[] }) 
 }
 
 function SlideThumb({ slide, product }: { slide: HeroSlide; product?: Product }) {
+  if (slide.imageMode === "banner" && slide.image) {
+    return (
+      <span className="relative h-[72px] w-[120px] shrink-0 overflow-hidden rounded-xl bg-[#ececf0]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={slide.image} alt="" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
   return (
     <span className="relative grid h-[72px] w-[120px] shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-b from-white to-[#ececf0]">
       <span className="absolute -right-4 -top-4 h-20 w-20 rounded-full opacity-40 blur-xl" style={{ background: slide.glow }} />
-      <span className="relative h-[85%] w-[50%] rotate-[14deg]">{product ? <ProductMedia p={product} /> : null}</span>
+      {slide.imageMode === "lado" && slide.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={slide.image} alt="" className="relative h-[85%] w-[70%] object-contain" />
+      ) : (
+        <span className="relative h-[85%] w-[50%] rotate-[14deg]">{product ? <ProductMedia p={product} /> : null}</span>
+      )}
     </span>
   );
 }
+
+type SlideKind = "texto" | "banner" | "lado";
 
 function SlideModal({ slide, products, onClose, onSave }: { slide: HeroSlide; products: Product[]; onClose: () => void; onSave: (s: HeroSlide) => void }) {
   const [s, setS] = useState(slide);
   const set = <K extends keyof HeroSlide>(k: K, v: HeroSlide[K]) => setS((x) => ({ ...x, [k]: v }));
   const p = products.find((x) => x.id === s.productId);
+  const kind: SlideKind = s.imageMode ?? "texto";
+  const setKind = (k: SlideKind) => setS((x) => ({ ...x, imageMode: k === "texto" ? undefined : k }));
+  const missingPhoto = kind !== "texto" && !s.image;
   return (
     <Modal
       open
@@ -247,68 +267,230 @@ function SlideModal({ slide, products, onClose, onSave }: { slide: HeroSlide; pr
       footer={
         <>
           <AButton onClick={onClose}>Cancelar</AButton>
-          <AButton variant="accent" onClick={() => onSave(s)}>
+          <AButton variant="accent" disabled={missingPhoto} onClick={() => onSave(s)}>
             Aplicar
           </AButton>
         </>
       }
     >
-      {/* prévia */}
-      <div className="relative mb-5 overflow-hidden rounded-2xl bg-gradient-to-b from-[#fbfbfd] to-[#f2f2f5] p-6">
-        <span className="absolute -right-10 -top-16 h-56 w-56 rounded-full opacity-25 blur-3xl" style={{ background: s.glow }} />
-        <div className="relative grid grid-cols-[1fr_120px] items-center gap-4">
-          <div>
-            <p className="text-[14px] font-semibold" style={{ color: s.eyebrowColor }}>
-              {s.eyebrow}
-            </p>
-            <p className="text-[26px] font-bold leading-tight tracking-[-0.03em]">{s.title || p?.name || "Título"}</p>
-            <p className="mt-1 text-[15px] font-medium text-muted">{s.subtitle || "Frase do slide"}</p>
-            <span className="mt-3 inline-flex h-9 items-center rounded-full bg-[#1d1d1f] px-4 text-[13px] text-white">{s.ctaLabel || "Comprar agora"}</span>
-          </div>
-          <span className="h-[130px] rotate-[14deg]">{p ? <ProductMedia p={p} /> : null}</span>
-        </div>
-      </div>
+      <Segmented
+        items={[
+          { value: "texto", label: "Texto e produto" },
+          { value: "banner", label: "Banner com foto" },
+          { value: "lado", label: "Foto e texto" },
+        ]}
+        value={kind}
+        onChange={setKind}
+        className="mb-4"
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Produto do slide" hint="foto e preço" className="sm:col-span-2">
-          <SelectInput
-            value={s.productId ?? ""}
-            onChange={(e) => {
-              const np = products.find((x) => x.id === e.target.value);
-              setS((x) => ({ ...x, productId: e.target.value || undefined, title: x.title || np?.name || "", glow: np ? np.colorHex : x.glow }));
-            }}
-          >
-            <option value="">Sem produto</option>
-            {products.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name} {x.storage} · {x.color} {!x.active || x.stock === 0 ? "(indisponível)" : ""}
-              </option>
-            ))}
-          </SelectInput>
-        </FormField>
-        <FormField label="Selo acima do título">
-          <TextInput value={s.eyebrow} onChange={(e) => set("eyebrow", e.target.value)} placeholder="Novo, Seminovo, Oferta…" />
-        </FormField>
-        <FormField label="Cor do selo">
-          <ColorInput value={s.eyebrowColor} onChange={(v) => set("eyebrowColor", v)} presets={["#bf4800", "#0071e3", "#1f8a3e", "#d70015", "#1d1d1f"]} />
-        </FormField>
-        <FormField label="Título" className="sm:col-span-2">
-          <TextInput value={s.title} onChange={(e) => set("title", e.target.value)} placeholder={p?.name ?? "Ex.: iPhone 17 Pro Max"} />
-        </FormField>
-        <FormField label="Frase" className="sm:col-span-2">
-          <TextInput value={s.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Potência, câmera e design em outro nível." />
-        </FormField>
-        <FormField label="Texto do botão">
-          <TextInput value={s.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} />
-        </FormField>
-        <FormField label="Link do botão" hint={p ? "vazio = página do produto" : ""}>
-          <TextInput value={s.ctaHref} onChange={(e) => set("ctaHref", e.target.value)} placeholder="/loja?c=iphone" />
-        </FormField>
-        <FormField label="Cor do brilho de fundo" className="sm:col-span-2">
-          <ColorInput value={s.glow} onChange={(v) => set("glow", v)} presets={["#c8662f", "#2d3a52", "#c9d7e6", "#bfa48a", "#5b6fd6", "#b7c2a6", "#e9cfd2", "#0071e3"]} />
-        </FormField>
-      </div>
+      {/* prévia */}
+      {kind === "banner" ? (
+        <div className="mb-5 overflow-hidden rounded-2xl bg-[#f2f2f5]">
+          {s.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={s.image} alt="" className="aspect-[2.9/1] w-full object-cover" />
+          ) : (
+            <div className="grid aspect-[2.9/1] place-items-center px-6 text-center text-[13px] text-muted">A prévia aparece aqui quando você enviar a foto</div>
+          )}
+        </div>
+      ) : (
+        <div className="relative mb-5 overflow-hidden rounded-2xl bg-gradient-to-b from-[#fbfbfd] to-[#f2f2f5] p-6">
+          <span className="absolute -right-10 -top-16 h-56 w-56 rounded-full opacity-25 blur-3xl" style={{ background: s.glow }} />
+          <div className="relative grid grid-cols-[1fr_120px] items-center gap-4">
+            <div>
+              <p className="text-[14px] font-semibold" style={{ color: s.eyebrowColor }}>
+                {s.eyebrow}
+              </p>
+              <p className="text-[26px] font-bold leading-tight tracking-[-0.03em]">{s.title || p?.name || "Título"}</p>
+              <p className="mt-1 text-[15px] font-medium text-muted">{s.subtitle || "Frase do slide"}</p>
+              <span className="mt-3 inline-flex h-9 items-center rounded-full bg-[#1d1d1f] px-4 text-[13px] text-white">{s.ctaLabel || "Comprar agora"}</span>
+            </div>
+            {kind === "lado" ? (
+              s.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.image} alt="" className="h-[130px] w-full object-contain" />
+              ) : (
+                <span className="grid h-[130px] place-items-center rounded-xl border border-dashed border-black/15 text-center text-[11.5px] text-muted">sua foto</span>
+              )
+            ) : (
+              <span className="h-[130px] rotate-[14deg]">{p ? <ProductMedia p={p} /> : null}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {kind !== "texto" && (
+        <div className="mb-5 grid gap-3 sm:grid-cols-[1.6fr_1fr]">
+          <PhotoSlot
+            label="Foto para computador"
+            hint={kind === "banner" ? "ideal 2400 × 830 px" : "PNG sem fundo fica melhor"}
+            aspect={kind === "banner" ? "aspect-[2.9/1]" : "aspect-[4/3]"}
+            max={kind === "banner" ? 2400 : 1600}
+            value={s.image}
+            onChange={(v) => set("image", v)}
+          />
+          <PhotoSlot
+            label="Foto para celular"
+            hint={kind === "banner" ? "opcional · 1080 × 1350 px" : "opcional"}
+            aspect={kind === "banner" ? "aspect-[4/5]" : "aspect-[4/3]"}
+            max={1400}
+            value={s.imageMobile}
+            onChange={(v) => set("imageMobile", v)}
+          />
+        </div>
+      )}
+
+      {kind === "banner" ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Link ao clicar" hint="vazio = loja">
+            <TextInput value={s.ctaHref} onChange={(e) => set("ctaHref", e.target.value)} placeholder="/loja?c=iphone" />
+          </FormField>
+          <FormField label="Descrição da foto" hint="leitores de tela e Google">
+            <TextInput value={s.title} onChange={(e) => set("title", e.target.value)} placeholder="Ex.: Black Friday Brian iPhones" />
+          </FormField>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Produto do slide" hint={kind === "lado" ? "preço" : "foto e preço"} className="sm:col-span-2">
+            <SelectInput
+              value={s.productId ?? ""}
+              onChange={(e) => {
+                const np = products.find((x) => x.id === e.target.value);
+                setS((x) => ({ ...x, productId: e.target.value || undefined, title: x.title || np?.name || "", glow: np ? np.colorHex : x.glow }));
+              }}
+            >
+              <option value="">Sem produto</option>
+              {products.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name} {x.storage} · {x.color} {!x.active || x.stock === 0 ? "(indisponível)" : ""}
+                </option>
+              ))}
+            </SelectInput>
+          </FormField>
+          <FormField label="Selo acima do título">
+            <TextInput value={s.eyebrow} onChange={(e) => set("eyebrow", e.target.value)} placeholder="Novo, Seminovo, Oferta…" />
+          </FormField>
+          <FormField label="Cor do selo">
+            <ColorInput value={s.eyebrowColor} onChange={(v) => set("eyebrowColor", v)} presets={["#bf4800", "#0071e3", "#1f8a3e", "#d70015", "#1d1d1f"]} />
+          </FormField>
+          <FormField label="Título" className="sm:col-span-2">
+            <TextInput value={s.title} onChange={(e) => set("title", e.target.value)} placeholder={p?.name ?? "Ex.: iPhone 17 Pro Max"} />
+          </FormField>
+          <FormField label="Frase" className="sm:col-span-2">
+            <TextInput value={s.subtitle} onChange={(e) => set("subtitle", e.target.value)} placeholder="Potência, câmera e design em outro nível." />
+          </FormField>
+          <FormField label="Texto do botão">
+            <TextInput value={s.ctaLabel} onChange={(e) => set("ctaLabel", e.target.value)} />
+          </FormField>
+          <FormField label="Link do botão" hint={p ? "vazio = página do produto" : ""}>
+            <TextInput value={s.ctaHref} onChange={(e) => set("ctaHref", e.target.value)} placeholder="/loja?c=iphone" />
+          </FormField>
+          <FormField label="Cor do brilho de fundo" className="sm:col-span-2">
+            <ColorInput value={s.glow} onChange={(v) => set("glow", v)} presets={["#c8662f", "#2d3a52", "#c9d7e6", "#bfa48a", "#5b6fd6", "#b7c2a6", "#e9cfd2", "#0071e3"]} />
+          </FormField>
+        </div>
+      )}
     </Modal>
+  );
+}
+
+/** Caixa de foto: clica ou arrasta, comprime e envia pro Storage */
+function PhotoSlot({
+  label,
+  hint,
+  aspect,
+  max,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  aspect: string;
+  max: number;
+  value?: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(false);
+  const [error, setError] = useState("");
+  const send = async (file?: File) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    setBusy(true);
+    setError("");
+    try {
+      const data = await compressImage(file, max, 0.86);
+      onChange(hasSupabase ? await uploadImage(data, "banners") : data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível enviar a foto");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between gap-2">
+        <span className="text-[13px] font-medium text-[#424245]">{label}</span>
+        <span className="truncate text-[11.5px] text-faint">{hint}</span>
+      </div>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          send(e.dataTransfer.files[0]);
+        }}
+        className={cn(
+          "group relative overflow-hidden rounded-2xl border border-dashed bg-[#f5f5f7] transition-colors",
+          aspect,
+          over ? "border-[#0071e3] bg-[#0071e3]/5" : "border-black/15",
+        )}
+      >
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          disabled={busy}
+          className={cn(
+            "absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-[12.5px] font-medium transition-opacity",
+            value ? "bg-black/45 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100" : "text-muted hover:text-ink",
+            busy && "opacity-100",
+          )}
+        >
+          {busy ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+          {busy ? "Enviando…" : value ? "Trocar foto" : "Escolher foto"}
+        </button>
+        {value && !busy ? (
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            aria-label="Remover foto"
+            className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-white/90 text-ink shadow-sm hover:bg-white"
+          >
+            <X size={14} />
+          </button>
+        ) : null}
+      </div>
+      {error ? <p className="mt-1.5 text-[12px] text-[#d70015]">{error}</p> : null}
+      <input
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          send(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+    </div>
   );
 }
 

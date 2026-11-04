@@ -72,6 +72,22 @@ export function HeroBanner() {
   const s = cur?.slide;
   const p = cur?.product;
   const href = s ? s.ctaHref || (p ? `/loja/${p.slug}` : "/loja") : "/loja";
+  // slide "banner com foto": a foto é o banner inteiro
+  const isBanner = s?.imageMode === "banner" && !!s.image;
+  // slide "foto e texto": a foto entra no lugar do aparelho
+  const sidePhoto = s?.imageMode === "lado" && s.image ? s : null;
+
+  const dots =
+    n > 1
+      ? slides.map((x, k) => (
+          <button
+            key={x.slide.id}
+            onClick={() => setI(k)}
+            aria-label={`Destaque ${k + 1}`}
+            className={`h-2 rounded-full transition-all duration-500 ${k === i % n ? "w-6 bg-ink" : "w-2 bg-ink/20 hover:bg-ink/40"}`}
+          />
+        ))
+      : null;
 
   return (
     <section
@@ -80,15 +96,28 @@ export function HeroBanner() {
       onMouseLeave={() => setPaused(false)}
     >
       {/* luz na cor do slide + arco de fundo */}
-      {s && (
+      {s && !isBanner && (
         <div
           key={`glow-${s.id}`}
           className="slide-in pointer-events-none absolute bottom-[-25%] left-[5%] h-[55%] w-[90%] rounded-full opacity-[0.2] blur-[80px] md:bottom-auto md:left-auto md:right-[-10%] md:top-[-20%] md:h-[140%] md:w-[70%] md:opacity-[0.22] md:blur-[90px]"
           style={{ background: s.glow }}
         />
       )}
-      <div className="pointer-events-none absolute -right-[18%] top-[-30%] hidden aspect-square w-[78%] rounded-full border border-white bg-white/40 shadow-[inset_0_0_80px_rgba(255,255,255,0.9)] md:block" />
+      {!isBanner && <div className="pointer-events-none absolute -right-[18%] top-[-30%] hidden aspect-square w-[78%] rounded-full border border-white bg-white/40 shadow-[inset_0_0_80px_rgba(255,255,255,0.9)] md:block" />}
 
+      {isBanner && s ? (
+        <Link key={s.id} href={href} aria-label={s.title || "Ver ofertas"} className="slide-in relative z-10 block">
+          <picture>
+            {s.imageMobile ? <source media="(max-width: 767px)" srcSet={s.imageMobile} /> : null}
+            <img src={s.image} alt={s.title || ""} className="block h-auto w-full md:h-[460px] md:object-cover lg:h-[500px]" />
+          </picture>
+        </Link>
+      ) : null}
+      {isBanner && dots ? (
+        <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/70 px-2.5 py-1.5 backdrop-blur-md md:bottom-5">{dots}</div>
+      ) : null}
+
+      {!isBanner && (
       <div className="relative mx-auto grid max-w-[1320px] grid-rows-[auto_auto] px-5 sm:px-6 md:min-h-[460px] md:grid-cols-[1.05fr_1fr] md:grid-rows-1 md:px-8 lg:min-h-[500px]">
         {s ? (
           <div key={s.id} className="slide-in relative z-10 flex flex-col justify-center pt-7 sm:pt-10 md:py-16 md:pl-6 lg:pl-12">
@@ -126,25 +155,22 @@ export function HeroBanner() {
                 </a>
               )}
             </div>
-            {n > 1 && (
-              <div className="mt-5 flex items-center gap-2 sm:mt-9">
-                {slides.map((x, k) => (
-                  <button
-                    key={x.slide.id}
-                    onClick={() => setI(k)}
-                    aria-label={`Destaque ${k + 1}`}
-                    className={`h-2 rounded-full transition-all duration-500 ${k === i % n ? "w-6 bg-ink" : "w-2 bg-ink/20 hover:bg-ink/40"}`}
-                  />
-                ))}
-              </div>
-            )}
+            {dots && <div className="mt-5 flex items-center gap-2 sm:mt-9">{dots}</div>}
           </div>
         ) : (
           <div />
         )}
 
         <div className="pointer-events-none relative h-[230px] min-[400px]:h-[260px] sm:h-[320px] md:h-auto md:min-h-0">
-          {s && !p && (
+          {sidePhoto && (
+            <div key={`art-${sidePhoto.id}`} className="slide-in absolute inset-0 flex items-center justify-center">
+              <picture className="h-[90%] w-[90%]">
+                {sidePhoto.imageMobile ? <source media="(max-width: 767px)" srcSet={sidePhoto.imageMobile} /> : null}
+                <img src={sidePhoto.image} alt={sidePhoto.title || ""} className="h-full w-full object-contain" />
+              </picture>
+            </div>
+          )}
+          {!sidePhoto && s && !p && (
             <div key={`art-${s.id}`} className="absolute inset-0 flex items-center justify-center">
               <div className="h-[108%] translate-y-[14%] md:h-[118%] md:translate-y-[12%]">
                 <div className="device-in h-full drop-shadow-[0_50px_60px_rgba(0,0,0,0.22)]">
@@ -153,7 +179,7 @@ export function HeroBanner() {
               </div>
             </div>
           )}
-          {p && s && (
+          {!sidePhoto && p && s && (
             <div key={`art-${s.id}`} className="absolute inset-0 flex items-center justify-center">
               {p.images.length ? (
                 <div className="slide-in h-[86%] w-[86%]">
@@ -170,6 +196,7 @@ export function HeroBanner() {
           )}
         </div>
       </div>
+      )}
     </section>
   );
 }
