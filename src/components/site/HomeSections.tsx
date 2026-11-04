@@ -4,16 +4,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDB } from "@/lib/store";
 import { installment, money } from "@/lib/format";
-import type { Category, Product } from "@/lib/types";
+import type { HeroSlide, Perk, Product } from "@/lib/types";
 import { ProductCard, ProductCardSkeleton } from "./ProductCard";
 import { ProductMedia } from "./ProductMedia";
 import { DeviceArt } from "./DeviceArt";
 import { Reveal } from "./Reveal";
-import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Pin, Shield, Truck } from "@/components/ui/Icons";
+import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Pin, Shield, Store, Swap, Truck } from "@/components/ui/Icons";
 import { useSettings } from "./useSettings";
 import { TiltCard } from "@/components/ui/be-ui-tilt-card";
 
-/* Frase curta de cada linha, no tom das páginas de produto */
+/* Frase padrão quando o slide não tem frase */
 const TAGLINE: Record<string, string> = {
   "iphone-novo": "Potência, câmera e design em outro nível.",
   "iphone-seminovo": "Revisado, com bateria medida e garantia da loja.",
@@ -25,14 +25,20 @@ const TAGLINE: Record<string, string> = {
 const tagline = (p: Product) =>
   p.category === "iphone" ? TAGLINE[p.condition === "novo" ? "iphone-novo" : "iphone-seminovo"] : TAGLINE[p.category];
 
-/* ---------------- Banner principal ---------------- */
+/* ---------------- Banner principal (editável em Admin > Vitrine) ---------------- */
+
+type ResolvedSlide = { slide: HeroSlide; product?: Product };
 
 export function HeroBanner() {
   const db = useDB();
-  const slides = useMemo(
-    () => (db?.products ?? []).filter((x) => x.active && x.featured && x.stock > 0).slice(0, 4),
-    [db],
-  );
+  const slides = useMemo<ResolvedSlide[]>(() => {
+    if (!db) return [];
+    return db.storefront.heroSlides
+      .filter((s) => s.active)
+      .map((s) => ({ slide: s, product: db.products.find((x) => x.id === s.productId) }))
+      // slide de produto só aparece se o produto estiver à venda
+      .filter((x) => !x.slide.productId || (x.product && x.product.active && x.product.stock > 0));
+  }, [db]);
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const n = slides.length;
@@ -43,7 +49,10 @@ export function HeroBanner() {
     return () => clearTimeout(t);
   }, [i, paused, n]);
 
-  const p = slides[i % Math.max(1, n)];
+  const cur = slides[i % Math.max(1, n)];
+  const s = cur?.slide;
+  const p = cur?.product;
+  const href = s ? s.ctaHref || (p ? `/loja/${p.slug}` : "/loja") : "/loja";
 
   return (
     <section
@@ -51,44 +60,52 @@ export function HeroBanner() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* luz na cor do aparelho + arco de fundo */}
-      {p && (
+      {/* luz na cor do slide + arco de fundo */}
+      {s && (
         <div
-          key={`glow-${p.id}`}
+          key={`glow-${s.id}`}
           className="slide-in pointer-events-none absolute bottom-[-25%] left-[5%] h-[55%] w-[90%] rounded-full opacity-[0.2] blur-[80px] md:bottom-auto md:left-auto md:right-[-10%] md:top-[-20%] md:h-[140%] md:w-[70%] md:opacity-[0.22] md:blur-[90px]"
-          style={{ background: p.colorHex }}
+          style={{ background: s.glow }}
         />
       )}
       <div className="pointer-events-none absolute -right-[18%] top-[-30%] hidden aspect-square w-[78%] rounded-full border border-white bg-white/40 shadow-[inset_0_0_80px_rgba(255,255,255,0.9)] md:block" />
 
       <div className="relative mx-auto grid min-h-[600px] max-w-[1320px] grid-rows-[auto_1fr] px-6 md:min-h-[460px] md:grid-cols-[1.05fr_1fr] md:grid-rows-1 md:px-8 lg:min-h-[500px]">
-        {p ? (
-          <div key={p.id} className="slide-in relative z-10 flex flex-col justify-center pt-10 md:py-16 md:pl-6 lg:pl-12">
-            <p className="text-[17px] font-semibold text-[#bf4800] md:text-[19px]">{p.condition === "novo" ? "Novo" : p.condition === "vitrine" ? "Vitrine" : "Seminovo"}</p>
-            <h1 className="display mt-1.5 text-[40px] sm:text-[52px] lg:text-[64px]">{p.name}</h1>
+        {s ? (
+          <div key={s.id} className="slide-in relative z-10 flex flex-col justify-center pt-10 md:py-16 md:pl-6 lg:pl-12">
+            {s.eyebrow ? (
+              <p className="text-[17px] font-semibold md:text-[19px]" style={{ color: s.eyebrowColor }}>
+                {s.eyebrow}
+              </p>
+            ) : null}
+            <h1 className="display mt-1.5 text-[40px] sm:text-[52px] lg:text-[64px]">{s.title || p?.name}</h1>
             <p className="mt-3 max-w-[440px] text-[20px] font-medium leading-[1.25] tracking-[-0.02em] text-muted sm:text-[24px] lg:text-[28px]">
-              {tagline(p)}
+              {s.subtitle || (p ? tagline(p) : "")}
             </p>
-            <p className="mt-4 text-[15px] text-ink tabular">
-              <span className="font-semibold">{money(p.price)}</span>
-              <span className="text-muted"> à vista ou 12x de {installment(p.price)}</span>
-            </p>
+            {p ? (
+              <p className="mt-4 text-[15px] text-ink tabular">
+                <span className="font-semibold">{money(p.price)}</span>
+                <span className="text-muted"> à vista ou 12x de {installment(p.price)}</span>
+              </p>
+            ) : null}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href={`/loja/${p.slug}`} className="btn-ink inline-flex h-12 items-center rounded-full px-7 text-[16px] font-medium">
-                Comprar agora
+              <Link href={href} className="btn-ink inline-flex h-12 items-center rounded-full px-7 text-[16px] font-medium">
+                {s.ctaLabel || "Comprar agora"}
               </Link>
-              <Link href={`/loja/${p.slug}`} className="btn-outline inline-flex h-12 items-center gap-1 rounded-full px-6 text-[16px] font-medium">
-                Saiba mais <ChevronRight size={16} />
-              </Link>
+              {p ? (
+                <Link href={`/loja/${p.slug}`} className="btn-outline inline-flex h-12 items-center gap-1 rounded-full px-6 text-[16px] font-medium">
+                  Saiba mais <ChevronRight size={16} />
+                </Link>
+              ) : null}
             </div>
             {n > 1 && (
               <div className="mt-9 flex items-center gap-2">
-                {slides.map((s, k) => (
+                {slides.map((x, k) => (
                   <button
-                    key={s.id}
+                    key={x.slide.id}
                     onClick={() => setI(k)}
                     aria-label={`Destaque ${k + 1}`}
-                    className={`h-2 rounded-full transition-all duration-500 ${k === i ? "w-6 bg-ink" : "w-2 bg-ink/20 hover:bg-ink/40"}`}
+                    className={`h-2 rounded-full transition-all duration-500 ${k === i % n ? "w-6 bg-ink" : "w-2 bg-ink/20 hover:bg-ink/40"}`}
                   />
                 ))}
               </div>
@@ -99,11 +116,11 @@ export function HeroBanner() {
         )}
 
         <div className="pointer-events-none relative min-h-[300px] md:min-h-0">
-          {p && (
-            <div key={`art-${p.id}`} className="absolute inset-0 flex items-center justify-center">
+          {p && s && (
+            <div key={`art-${s.id}`} className="absolute inset-0 flex items-center justify-center">
               {p.images.length ? (
-                <div className="slide-in h-[86%] w-[86%] overflow-hidden rounded-[24px]">
-                  <ProductMedia p={p} />
+                <div className="slide-in h-[86%] w-[86%]">
+                  <ProductMedia p={p} className="!object-contain" />
                 </div>
               ) : (
                 <div className="h-[108%] translate-y-[14%] md:h-[118%] md:translate-y-[12%]">
@@ -122,23 +139,30 @@ export function HeroBanner() {
 
 /* ---------------- Vantagens ---------------- */
 
+export const PERK_ICON: Record<Perk["icon"], (size: number) => React.ReactNode> = {
+  truck: (z) => <Truck size={z} />,
+  bag: (z) => <Bag size={z} />,
+  card: (z) => <CardIcon size={z} />,
+  shield: (z) => <Shield size={z} />,
+  store: (z) => <Store size={z} />,
+  swap: (z) => <Swap size={z} />,
+};
+
 export function Perks() {
-  const items = [
-    { icon: <Truck size={30} />, t: "Envio para todo o Brasil", d: "Com seguro e rastreio" },
-    { icon: <Bag size={30} />, t: "Retire na loja", d: "Grátis, em Itatiba" },
-    { icon: <CardIcon size={30} />, t: "Até 12x no cartão", d: "Pagamento pelo Mercado Pago" },
-    { icon: <Shield size={30} />, t: "Garantia da loja", d: "Seminovo revisado um por um" },
-  ];
+  const db = useDB();
+  const items = db?.storefront.perks ?? [];
   return (
     <div className="border-b border-line bg-white shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)]">
-      <ul className="no-scrollbar mx-auto flex max-w-[1320px] snap-x gap-8 overflow-x-auto px-6 py-5 md:grid md:grid-cols-4 md:gap-4 md:px-8 md:py-6">
+      <ul className="no-scrollbar mx-auto flex min-h-[84px] max-w-[1320px] snap-x gap-8 overflow-x-auto px-6 py-5 md:grid md:grid-cols-4 md:gap-4 md:px-8 md:py-6">
         {items.map((it) => (
-          <li key={it.t} className="flex shrink-0 snap-start items-center gap-3.5 md:justify-center">
-            <span className="text-ink">{it.icon}</span>
-            <span>
-              <span className="block whitespace-nowrap text-[14.5px] font-semibold">{it.t}</span>
-              <span className="block whitespace-nowrap text-[13px] text-muted">{it.d}</span>
-            </span>
+          <li key={it.id} className="shrink-0 snap-start md:flex md:justify-center">
+            <Link href={it.href || "/"} className="flex items-center gap-3.5 transition-colors hover:text-accent">
+              <span className="text-ink">{PERK_ICON[it.icon](30)}</span>
+              <span>
+                <span className="block whitespace-nowrap text-[14.5px] font-semibold">{it.title}</span>
+                <span className="block whitespace-nowrap text-[13px] text-muted">{it.text}</span>
+              </span>
+            </Link>
           </li>
         ))}
       </ul>
@@ -148,40 +172,24 @@ export function Perks() {
 
 /* ---------------- Categorias ---------------- */
 
-const CATS: { key: string; href: string; label: string; art: Category | "magsafe"; color: string; name: string }[] = [
-  { key: "iphone", href: "/loja?c=iphone", label: "iPhone", art: "iphone", color: "#4a4f5c", name: "iPhone" },
-  { key: "mac", href: "/loja?c=macbook", label: "MacBook", art: "macbook", color: "#c9ccd3", name: "MacBook" },
-  { key: "ipad", href: "/loja?c=ipad", label: "iPad", art: "ipad", color: "#b9a9d9", name: "iPad" },
-  { key: "watch", href: "/loja?c=watch", label: "Apple Watch", art: "watch", color: "#2e2f33", name: "Apple Watch" },
-  { key: "airpods", href: "/loja?q=AirPods", label: "AirPods", art: "acessorio", color: "#f4f4f4", name: "AirPods" },
-  { key: "acc", href: "/loja?c=acessorio", label: "Acessórios", art: "magsafe", color: "#e8e8ed", name: "Carregador" },
-];
-
 export function CategoryTiles() {
+  const db = useDB();
+  const cats = (db?.storefront.categories ?? []).filter((c) => c.active);
   return (
-    <div className="no-scrollbar -mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-3 md:px-0 lg:grid-cols-6">
-      {CATS.map((c) => (
-        <TiltCard
-          key={c.key}
-          max={14}
-          glareOpacity={0.1}
-          className="group w-[40%] shrink-0 snap-start rounded-[18px] bg-mist sm:w-[28%] md:w-auto"
-        >
-        <Link href={c.href} className="flex h-full flex-col px-4 pb-4 pt-5">
-          <div className="flex h-[96px] items-center justify-center md:h-[110px]">
-            <div className="h-full w-[78%] transition-transform duration-500 ease-[var(--ease-out-quint)] group-hover:scale-[1.06]">
-              {c.art === "magsafe" ? (
-                <MagsafeArt />
-              ) : (
-                <DeviceArt id={`cat-${c.key}`} category={c.art} name={c.name} color={c.color} className="h-full w-full" />
-              )}
+    <div className="no-scrollbar -mx-6 flex min-h-[170px] snap-x gap-3 overflow-x-auto px-6 pb-2 md:mx-0 md:grid md:grid-cols-3 md:px-0 lg:grid-cols-6">
+      {cats.map((c) => (
+        <TiltCard key={c.id} max={14} glareOpacity={0.1} className="group w-[40%] shrink-0 snap-start rounded-[var(--radius-card,18px)] bg-mist sm:w-[28%] md:w-auto">
+          <Link href={c.href} className="flex h-full flex-col px-4 pb-4 pt-5">
+            <div className="flex h-[96px] items-center justify-center md:h-[110px]">
+              <div className="h-full w-[78%] transition-transform duration-500 ease-[var(--ease-out-quint)] group-hover:scale-[1.06]">
+                {c.art === "magsafe" ? <MagsafeArt /> : <DeviceArt id={`cat-${c.id}`} category={c.art} name={c.label} color={c.color} className="h-full w-full" />}
+              </div>
             </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-2">
-            <span className="text-[15px] font-medium">{c.label}</span>
-            <ChevronRight size={16} className="shrink-0 text-ink/70 transition-transform group-hover:translate-x-0.5" />
-          </div>
-        </Link>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <span className="text-[15px] font-medium">{c.label}</span>
+              <ChevronRight size={16} className="shrink-0 text-ink/70 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </Link>
         </TiltCard>
       ))}
     </div>
@@ -208,23 +216,11 @@ function MagsafeArt() {
 
 const SHELF_ITEM = "w-[72%] shrink-0 snap-start sm:w-[44%] md:w-[calc((100%-60px)/4)] xl:w-[calc((100%-80px)/5)]";
 
-export function Shelf({
-  title,
-  subtitle,
-  href,
-  filter,
-}: {
-  title: string;
-  subtitle?: string;
-  href: string;
-  filter: (p: Product) => boolean;
-}) {
-  const db = useDB();
-  const list = useMemo(() => (db?.products ?? []).filter((p) => p.active && p.stock > 0 && filter(p)).slice(0, 10), [db, filter]);
+export function Shelf({ title, subtitle, href, list, loading }: { title: string; subtitle?: string; href: string; list: Product[]; loading?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: "smooth" });
 
-  if (db && list.length === 0) return null;
+  if (!loading && list.length === 0) return null;
 
   return (
     <Reveal as="section">
@@ -238,7 +234,7 @@ export function Shelf({
         </Link>
       </div>
       <div ref={ref} className="no-scrollbar -mx-6 mt-2 flex snap-x scroll-px-6 gap-4 overflow-x-auto px-6 pb-14 pt-5 md:-mx-8 md:scroll-px-8 md:px-8 md:gap-5">
-        {db
+        {!loading
           ? list.map((p) => <ProductCard key={p.id} p={p} className={SHELF_ITEM} />)
           : Array.from({ length: 5 }).map((_, k) => (
               <div key={k} className={SHELF_ITEM}>

@@ -18,7 +18,9 @@ export function compressImage(file: File, max = 900, quality = 0.78): Promise<st
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject(new Error("canvas"));
         ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        // PNG/WebP podem ter fundo transparente (foto de produto recortada): mantém a transparência
+        const alpha = /png|webp/.test(file.type);
+        resolve(canvas.toDataURL(alpha ? "image/webp" : "image/jpeg", quality));
       };
       img.src = reader.result as string;
     };

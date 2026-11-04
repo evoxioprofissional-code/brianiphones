@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "./Logo";
 import { useSettings } from "./useSettings";
 import { waLink } from "@/lib/whatsapp";
-import { ArrowRight, Bag, CardIcon, Close, Search, Shield, Store, Truck, User, WhatsApp } from "@/components/ui/Icons";
+import { ArrowRight, Bag, CardIcon, Close, Search, Shield, Store, Swap, Truck, User, WhatsApp } from "@/components/ui/Icons";
+import { useDB } from "@/lib/store";
+import type { Perk } from "@/lib/types";
 import { cartCount, openCart, useCart } from "@/lib/cart";
 
 const NAV: HeaderLink[] = [
@@ -37,13 +39,19 @@ const PERKS = [
 
 const QUICK = ["iPhone 17 Pro", "iPhone seminovo", "MacBook Air", "Apple Watch", "AirPods"];
 
+const PERK_ICONS: Record<Perk["icon"], typeof Truck> = { truck: Truck, bag: Bag, card: CardIcon, shield: Shield, store: Store, swap: Swap };
+
 export function Header() {
+  const db = useDB();
+  const perks = db
+    ? db.storefront.perks.map((p) => ({ t: p.title, icon: PERK_ICONS[p.icon], href: p.href || "/" }))
+    : PERKS;
   return (
     <>
       {/* Faixa de vantagens */}
       <div className="bg-mist">
         <ul className="mx-auto flex h-10 max-w-[1320px] items-center justify-center px-5 text-[12.5px] text-ink md:h-11 md:text-[13px]">
-          {PERKS.map(({ t, icon: Icon, href }, i) => (
+          {perks.map(({ t, icon: Icon, href }, i) => (
             <li key={t} className={`items-center ${i === 0 ? "flex" : "hidden md:flex"}`}>
               {i > 0 && <span className="mx-5 hidden h-4 w-px bg-ink/15 md:block lg:mx-7" />}
               <Link href={href} className="flex items-center gap-2 transition-colors hover:text-accent">

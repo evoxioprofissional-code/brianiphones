@@ -123,6 +123,7 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
   aguardando_pagamento: "Aguardando pagamento",
   pago: "Pago",
   separando: "Separando",
+  embalado: "Pronto para envio",
   enviado: "Enviado",
   entregue: "Entregue",
   cancelado: "Cancelado",
