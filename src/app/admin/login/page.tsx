@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { login, usesSupabaseAuth } from "@/lib/auth";
 import { Logo } from "@/components/site/Logo";
-import { DeviceArt } from "@/components/site/DeviceArt";
 import { cn } from "@/lib/utils";
+
+const AREAS = ["Pedidos", "Estoque", "Clientes", "Vitrine", "Financeiro"];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,173 +39,147 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[#f5f5f7]">
-      {/* fundo: luzes suaves + aparelhos flutuando */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-[10%] -top-[20%] h-[620px] w-[620px] rounded-full bg-[#0071e3]/[0.13] blur-[120px]" />
-        <div className="absolute -bottom-[25%] -right-[10%] h-[680px] w-[680px] rounded-full bg-[#ff9f0a]/[0.12] blur-[130px]" />
-        <div className="absolute left-1/2 top-[38%] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-white blur-[80px]" />
-        <div
-          className="absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage: "radial-gradient(rgba(0,0,0,0.07) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-            maskImage: "radial-gradient(ellipse at center, black 30%, transparent 75%)",
-          }}
-        />
-        <div className="login-float absolute left-[7%] top-[16%] hidden h-[300px] -rotate-[16deg] drop-shadow-[0_40px_50px_rgba(0,0,0,0.18)] lg:block">
-          <DeviceArt id="login-a" category="iphone" name="iPhone" color="#c8662f" className="h-full w-auto" />
+    <div className="flex min-h-dvh flex-col bg-black lg:grid lg:grid-cols-[1.08fr_1fr]">
+      {/* lado escuro: marca + luz em movimento */}
+      <aside className="relative isolate flex min-h-[248px] flex-col overflow-hidden px-6 pb-12 pt-6 text-white sm:px-10 lg:min-h-dvh lg:px-14 lg:pb-12 lg:pt-12">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="aurora-a absolute -left-[20%] top-[30%] h-[70vmax] w-[70vmax] rounded-full bg-[radial-gradient(closest-side,rgba(200,102,47,0.55),transparent)] blur-[40px]" />
+          <div className="aurora-b absolute -right-[30%] -top-[30%] h-[60vmax] w-[60vmax] rounded-full bg-[radial-gradient(closest-side,rgba(94,92,230,0.38),transparent)] blur-[50px]" />
+          <div className="aurora-c absolute bottom-[-40%] right-[-10%] h-[55vmax] w-[55vmax] rounded-full bg-[radial-gradient(closest-side,rgba(255,214,170,0.22),transparent)] blur-[40px]" />
+          {/* linhas finas, bem de leve */}
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage: "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+              backgroundSize: "56px 56px",
+              maskImage: "radial-gradient(ellipse 80% 70% at 30% 60%, black, transparent)",
+            }}
+          />
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
-        <div className="login-float-slow absolute bottom-[10%] right-[8%] hidden h-[320px] rotate-[14deg] drop-shadow-[0_40px_50px_rgba(0,0,0,0.18)] lg:block">
-          <DeviceArt id="login-b" category="iphone" name="iPhone" color="#2d3a52" className="h-full w-auto" />
+
+        <div className="flex items-center justify-between">
+          <Link href="/" aria-label="Brian iPhones, voltar para a loja" className="flex items-center gap-2.5">
+            <Logo compact tone="paper" />
+            <span className="rounded-full border border-white/20 px-2 py-0.5 text-[10px] font-medium tracking-[0.08em] text-white/70">PAINEL</span>
+          </Link>
+          <Link href="/" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:hidden">
+            <ArrowLeft size={15} /> Loja
+          </Link>
         </div>
-        <div className="login-float-slow absolute bottom-[14%] left-[12%] hidden h-[150px] -rotate-6 opacity-90 drop-shadow-[0_30px_40px_rgba(0,0,0,0.16)] xl:block">
-          <DeviceArt id="login-c" category="watch" name="Watch" color="#2e2f33" className="h-full w-auto" />
-        </div>
-        <div className="login-float absolute right-[14%] top-[14%] hidden h-[130px] rotate-[8deg] drop-shadow-[0_30px_40px_rgba(0,0,0,0.14)] xl:block">
-          <DeviceArt id="login-d" category="acessorio" name="AirPods" color="#f4f4f4" className="h-full w-auto" />
-        </div>
-      </div>
 
-      {/* topo */}
-      <header className="relative z-10 flex items-center justify-between px-5 py-5 md:px-8">
-        <Link href="/" className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13.5px] text-[#424245] transition-colors hover:bg-black/[0.05] hover:text-ink">
-          <ArrowLeft size={16} /> Voltar para a loja
-        </Link>
-        <span className="hidden items-center gap-1.5 text-[12.5px] text-muted sm:flex">
-          <ShieldCheck size={15} className="text-[#1f8a3e]" /> Conexão segura
-        </span>
-      </header>
-
-      {/* formulário */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-5 pb-16">
-        <div className="login-in w-full max-w-[420px]">
-          <div className="flex flex-col items-center text-center">
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-12px_rgba(0,0,0,0.18)] ring-1 ring-black/[0.04] backdrop-blur">
-              <Logo compact />
-              <span className="rounded-md bg-[#1d1d1f] px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-white">ADMIN</span>
-            </div>
-            <h1 className="mt-8 text-[34px] font-semibold leading-[1.1] tracking-[-0.035em] text-ink md:text-[40px]">Bem-vindo de volta.</h1>
-            <p className="mt-2 text-[16px] text-muted">Entre para cuidar da loja.</p>
-          </div>
-
-          <form
-            onSubmit={submit}
-            key={shake}
-            className={cn(
-              "mt-9 rounded-[28px] bg-white/85 p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_30px_70px_-24px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.05] backdrop-blur-xl",
-              shake > 0 && "login-shake",
-            )}
-          >
-            {/* campos unidos, estilo Apple */}
-            <div className={cn("overflow-hidden rounded-[22px] bg-[#f5f5f7] ring-1 transition-shadow", err ? "ring-[#d70015]/40" : "ring-transparent")}>
-              <FloatField
-                id="email"
-                label={usesSupabaseAuth ? "E-mail" : "Usuário"}
-                type={usesSupabaseAuth ? "email" : "text"}
-                autoComplete="username"
-                value={user}
-                onChange={(v) => (setUser(v), setErr(""))}
-                icon={usesSupabaseAuth ? <Mail size={18} /> : <User size={18} />}
-                autoFocus
-              />
-              <div className="mx-4 h-px bg-black/[0.07]" />
-              <FloatField
-                id="senha"
-                label="Senha"
-                type={show ? "text" : "password"}
-                autoComplete="current-password"
-                value={pass}
-                onChange={(v) => (setPass(v), setErr(""))}
-                icon={<Lock size={18} />}
-                trailing={
-                  <button
-                    type="button"
-                    onClick={() => setShow((v) => !v)}
-                    className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:bg-black/[0.05] hover:text-ink"
-                    aria-label={show ? "Esconder senha" : "Mostrar senha"}
-                  >
-                    {show ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                }
-              />
-            </div>
-
-            <div className={cn("grid transition-[grid-template-rows] duration-300", err ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
-              <p className="overflow-hidden px-3 text-center text-[13px] text-[#d70015]">
-                <span className="block pt-3">{err}</span>
-              </p>
-            </div>
-
-            <button
-              disabled={busy}
-              className="group mt-2 flex h-[52px] w-full items-center justify-center gap-2 rounded-[22px] bg-[#0071e3] text-[15.5px] font-medium text-white transition-[filter,transform] hover:brightness-110 active:scale-[0.99] disabled:opacity-70"
-            >
-              {busy ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" /> Entrando…
-                </>
-              ) : (
-                <>
-                  Entrar <ArrowRight size={17} className="transition-transform group-hover:translate-x-0.5" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-[12.5px] leading-[1.6] text-muted">
-            Acesso restrito à equipe da Brian iPhones.
+        <div className="login-in mt-auto pt-10">
+          <h1 className="max-w-[520px] text-[34px] font-semibold leading-[1.04] tracking-[-0.04em] sm:text-[44px] lg:text-[64px]">
+            Sua loja inteira,
             <br />
-            Esqueceu a senha? Peça ao administrador para redefinir.
-          </p>
+            <span className="bg-gradient-to-r from-[#ffb27a] via-[#f5d0b5] to-[#b9b4ff] bg-clip-text text-transparent">num só lugar.</span>
+          </h1>
+          <ul className="mt-5 hidden flex-wrap gap-2 sm:flex lg:mt-8">
+            {AREAS.map((a) => (
+              <li key={a} className="rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-[12.5px] text-white/70 backdrop-blur-sm">
+                {a}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-10 hidden text-[12px] text-white/35 lg:block">© Brian iPhones · Itatiba — SP</p>
         </div>
-      </main>
+      </aside>
 
-      <footer className="relative z-10 pb-6 text-center text-[12px] text-faint">© Brian iPhones · Itatiba — SP</footer>
+      {/* lado claro: formulário */}
+      <main className="relative -mt-6 flex flex-1 flex-col rounded-t-[28px] bg-white lg:mt-0 lg:rounded-none">
+        <div className="hidden justify-end px-10 pt-10 lg:flex">
+          <Link href="/" className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13.5px] text-[#6e6e73] transition-colors hover:bg-black/[0.04] hover:text-ink">
+            <ArrowLeft size={15} /> Voltar para a loja
+          </Link>
+        </div>
+
+        <div className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
+          <div className="login-in w-full max-w-[380px]" style={{ animationDelay: "120ms" }}>
+            <h2 className="text-[28px] font-semibold tracking-[-0.03em] text-ink">Entrar</h2>
+            <p className="mt-1.5 text-[15px] text-muted">Acesso da equipe Brian iPhones.</p>
+
+            <form onSubmit={submit} key={shake} className={cn("mt-8 space-y-4", shake > 0 && "login-shake")} noValidate>
+              <Field id="email" label={usesSupabaseAuth ? "E-mail" : "Usuário"} error={!!err}>
+                <input
+                  id="email"
+                  type={usesSupabaseAuth ? "email" : "text"}
+                  autoComplete="username"
+                  autoFocus
+                  value={user}
+                  onChange={(e) => (setUser(e.target.value), setErr(""))}
+                  placeholder={usesSupabaseAuth ? "voce@email.com" : "usuário"}
+                  className="h-full w-full bg-transparent px-4 text-[16px] text-ink outline-none placeholder:text-[#b0b0b5]"
+                />
+              </Field>
+              <Field id="senha" label="Senha" error={!!err}>
+                <input
+                  id="senha"
+                  type={show ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={pass}
+                  onChange={(e) => (setPass(e.target.value), setErr(""))}
+                  placeholder="••••••••"
+                  className="h-full w-full bg-transparent pl-4 pr-12 text-[16px] text-ink outline-none placeholder:text-[#c7c7cc]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShow((v) => !v)}
+                  className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-[#86868b] transition-colors hover:bg-black/[0.05] hover:text-ink"
+                  aria-label={show ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {show ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </Field>
+
+              <div className={cn("grid transition-[grid-template-rows] duration-300", err ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+                <p className="overflow-hidden text-[13px] text-[#d70015]" role="alert">
+                  {err}
+                </p>
+              </div>
+
+              <button
+                disabled={busy}
+                className="group flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#1d1d1f] text-[15.5px] font-medium text-white shadow-[0_10px_24px_-12px_rgba(0,0,0,0.5)] transition-[background-color,transform] hover:bg-black active:scale-[0.99] disabled:opacity-70"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" /> Entrando…
+                  </>
+                ) : (
+                  <>
+                    Entrar <ArrowRight size={17} className="transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-8 flex items-start gap-2.5 rounded-2xl bg-[#f5f5f7] px-4 py-3.5 text-[12.5px] leading-[1.5] text-[#6e6e73]">
+              <ShieldCheck size={16} className="mt-px shrink-0 text-[#1f8a3e]" />
+              <span>Conexão segura. Esqueceu a senha? Peça ao administrador para redefinir.</span>
+            </div>
+          </div>
+        </div>
+
+        <p className="pb-6 text-center text-[12px] text-[#a1a1a6] lg:hidden">© Brian iPhones · Itatiba — SP</p>
+      </main>
     </div>
   );
 }
 
-function FloatField({
-  id,
-  label,
-  type,
-  value,
-  onChange,
-  icon,
-  trailing,
-  autoComplete,
-  autoFocus,
-}: {
-  id: string;
-  label: string;
-  type: string;
-  value: string;
-  onChange: (v: string) => void;
-  icon: React.ReactNode;
-  trailing?: React.ReactNode;
-  autoComplete?: string;
-  autoFocus?: boolean;
-}) {
+function Field({ id, label, error, children }: { id: string; label: string; error: boolean; children: React.ReactNode }) {
   return (
-    <label htmlFor={id} className="group relative flex h-[64px] cursor-text items-center gap-3 px-4 transition-colors focus-within:bg-white">
-      <span className="text-[#86868b] transition-colors group-focus-within:text-[#0071e3]">{icon}</span>
-      <span className="relative h-full flex-1">
-        <input
-          id={id}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          autoFocus={autoFocus}
-          placeholder=" "
-          className="peer absolute inset-0 w-full bg-transparent pb-2 pt-6 text-[16px] text-ink outline-none"
-        />
-        <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 text-[16px] text-[#86868b] transition-all duration-200 peer-focus:top-[18px] peer-focus:text-[12px] peer-[:not(:placeholder-shown)]:top-[18px] peer-[:not(:placeholder-shown)]:text-[12px]">
-          {label}
-        </span>
-      </span>
-      {trailing}
-    </label>
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-[13px] font-medium text-[#424245]">
+        {label}
+      </label>
+      <div
+        className={cn(
+          "relative h-[52px] rounded-[14px] bg-[#f5f5f7] ring-1 transition-[box-shadow,background-color] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#1d1d1f]",
+          error ? "ring-[#d70015]/50" : "ring-black/[0.06]",
+        )}
+      >
+        {children}
+      </div>
+    </div>
   );
 }

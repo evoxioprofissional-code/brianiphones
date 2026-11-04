@@ -300,21 +300,33 @@ input[type="range"].range::-moz-range-thumb {
 .login-in {
   animation: login-in 0.9s var(--ease-out-quint) both;
 }
-@keyframes login-float {
+/* luzes do lado escuro, andando bem devagar */
+@keyframes aurora-a {
   0%,
   100% {
-    translate: 0 0;
+    transform: translate(0, 0) scale(1);
   }
   50% {
-    translate: 0 -14px;
+    transform: translate(12%, -10%) scale(1.15);
   }
 }
-.login-float {
-  animation: login-float 7s ease-in-out infinite;
+@keyframes aurora-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-14%, 12%) scale(0.9);
+  }
 }
-.login-float-slow {
-  animation: login-float 9s ease-in-out infinite;
-  animation-delay: -3s;
+.aurora-a {
+  animation: aurora-a 16s ease-in-out infinite;
+}
+.aurora-b {
+  animation: aurora-b 20s ease-in-out infinite;
+}
+.aurora-c {
+  animation: aurora-a 24s ease-in-out infinite reverse;
 }
 @keyframes login-shake {
   10%,
@@ -340,8 +352,9 @@ input[type="range"].range::-moz-range-thumb {
 }
 @media (prefers-reduced-motion: reduce) {
   .login-in,
-  .login-float,
-  .login-float-slow,
+  .aurora-a,
+  .aurora-b,
+  .aurora-c,
   .login-shake {
     animation: none;
   }
