@@ -47,10 +47,13 @@ export function Header({ brand, links, actions, mobileActions, mobileFooter, mob
   }
 
   React.useEffect(() => {
-    // trava a rolagem com o menu aberto
-    document.body.style.overflow = open ? "hidden" : "";
+    // trava a rolagem com o menu aberto. Vai no <html>, não no <body>: com o
+    // <html> usando overflow-x: clip, travar o body cria outra área de rolagem
+    // e o header (sticky) some lá pra cima da página.
+    const root = document.documentElement;
+    root.style.overflow = open ? "hidden" : "";
     return () => {
-      document.body.style.overflow = "";
+      root.style.overflow = "";
     };
   }, [open]);
 

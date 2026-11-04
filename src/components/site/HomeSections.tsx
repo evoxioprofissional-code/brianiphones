@@ -189,21 +189,16 @@ export function Perks() {
   const db = useDB();
   const items = db?.storefront.perks ?? [];
   return (
-    <div className="border-b border-line bg-white shadow-[0_10px_30px_-24px_rgba(0,0,0,0.25)]">
-      <ul className="no-scrollbar mx-auto flex min-h-[84px] max-w-[1320px] snap-x gap-8 overflow-x-auto px-6 py-5 md:grid md:grid-cols-4 md:gap-4 md:px-8 md:py-6">
-        {items.map((it) => (
-          <li key={it.id} className="shrink-0 snap-start md:flex md:justify-center">
-            <Link href={it.href || "/"} className="flex items-center gap-3.5 transition-colors hover:text-accent">
-              <span className="text-ink">{PERK_ICON[it.icon](30)}</span>
-              <span>
-                <span className="block whitespace-nowrap text-[14.5px] font-semibold">{it.title}</span>
-                <span className="block whitespace-nowrap text-[13px] text-muted">{it.text}</span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="mx-auto flex min-h-[44px] max-w-[1320px] flex-wrap items-center justify-center gap-x-6 gap-y-2 px-5 py-3 sm:px-6 md:gap-x-10 md:py-4">
+      {items.map((it) => (
+        <li key={it.id}>
+          <Link href={it.href || "/"} className="flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink md:text-[13px]">
+            <span className="shrink-0 opacity-70 [&>svg]:h-4 [&>svg]:w-4">{PERK_ICON[it.icon](16)}</span>
+            <span className="whitespace-nowrap">{it.title}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
