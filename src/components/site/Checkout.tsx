@@ -83,14 +83,19 @@ export function Checkout() {
   const valid = !Object.values(errors).some(Boolean);
   const err = (k: keyof typeof errors) => tried && errors[k];
 
-  const submit = () => {
+  const [failure, setFailure] = useState("");
+
+  const submit = async () => {
     setTried(true);
+    setFailure("");
     if (!valid || !ship || items.length === 0) {
       document.querySelector("[data-invalid=true]")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setSending(true);
-    const order = addOrder({
+    let order;
+    try {
+      order = await addOrder({
       customer: { ...customer, name: customer.name.trim() },
       shipping: { method: ship.method, label: ship.label, price: ship.price, days: ship.days, address: needsAddress ? addr : undefined },
       payment,
@@ -98,7 +103,12 @@ export function Checkout() {
       items: items.map(({ product: p, qty }) => ({ productId: p.id, name: p.name, detail: `${p.storage} · ${p.color}`, price: p.price, qty })),
       subtotal,
       total,
-    });
+      });
+    } catch (e) {
+      setSending(false);
+      setFailure(e instanceof Error ? e.message : "Não foi possível finalizar o pedido. Tente de novo.");
+      return;
+    }
     clearCart();
     window.scrollTo({ top: 0 });
     router.push(`/pedido/${order.id}`);
@@ -306,6 +316,8 @@ export function Checkout() {
               {payment === "pix" ? "Finalizar e pagar com Pix" : payment === "boleto" ? "Finalizar e gerar boleto" : "Finalizar e pagar com cartão"}
             </button>
             {tried && !valid && <p className="mt-2 text-center text-[13px] text-bad">Falta preencher alguns campos.</p>}
+            {failure && <p className="mt-2 text-center text-[13px] text-bad">{failure}</p>}
+            {sending && <p className="mt-2 text-center text-[13px] text-muted">Registrando o pedido…</p>}
             <p className="mt-3 flex items-center justify-center gap-1.5 text-[12px] text-muted">
               <Shield size={14} /> Compra protegida pelo Mercado Pago
             </p>

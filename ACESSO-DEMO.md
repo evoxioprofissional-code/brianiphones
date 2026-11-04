@@ -1,12 +1,9 @@
-# Acesso ao painel (demonstração)
+# Acesso ao painel
 
 Painel: `/admin` (ex.: http://localhost:3000/admin)
 
-| Campo   | Valor       |
-| ------- | ----------- |
-| Usuário | `brian`     |
-| Senha   | `brian2026` |
+**Com o Supabase conectado** (padrão): entre com o e-mail e a senha do usuário
+criado em *Supabase > Authentication > Users > Add user* (marque "Auto Confirm User").
+O cadastro público está desligado, então só quem você criar lá entra no painel.
 
-Conta fictícia, só para apresentar ao cliente. O login fica no navegador
-(`src/lib/auth.ts`) e **não é segurança de verdade**. Quando o banco de dados
-for conectado, trocar por autenticação no servidor e apagar este arquivo.
+**Sem Supabase** (modo demonstração, sem `.env.local`): usuário `brian`, senha `brian2026`.

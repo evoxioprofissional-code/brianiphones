@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   ChevronRight,
@@ -23,16 +23,14 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { isLogged, logout } from "@/lib/auth";
-import { useDB } from "@/lib/store";
+import { logout, useAdminSession } from "@/lib/auth";
+import { useDB, useSyncStatus } from "@/lib/store";
 import { money, relative } from "@/lib/format";
 import { Logo } from "@/components/site/Logo";
 import { cn } from "@/lib/utils";
 import { AButton, Badge, OrderBadge, Kpi, Panel, Segmented } from "./kit";
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number; exact?: boolean };
-
-const noopSubscribe = () => () => {};
 
 /** Telas que aparecem sem a moldura do painel */
 const BARE = ["/admin/login", "/admin/imprimir"];
@@ -41,7 +39,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const db = useDB();
-  const logged = useSyncExternalStore(noopSubscribe, () => isLogged(), () => null);
+  const { logged, email } = useAdminSession();
   const bare = BARE.some((b) => path.startsWith(b));
   const [mobileNav, setMobileNav] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -165,11 +163,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#0071e3] to-[#5ac8fa] text-[13px] font-semibold text-white">B</span>
           <span className="min-w-0 flex-1 leading-tight">
             <span className="block text-[13.5px] font-medium">Brian</span>
-            <span className="block text-[12px] text-muted">Administrador</span>
+            <span className="block truncate text-[12px] text-muted">{email ?? "Administrador"}</span>
           </span>
           <button
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               router.replace("/admin/login");
             }}
             className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-black/5 hover:text-ink"
@@ -269,6 +267,7 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
       </button>
 
       <div className="ml-auto flex items-center gap-2">
+        <SaveIndicator />
         <div ref={ref} className="relative">
           <button
             onClick={() => setOpen((v) => !v)}
@@ -307,6 +306,23 @@ function TopBar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void
         </Link>
       </div>
     </div>
+  );
+}
+
+function SaveIndicator() {
+  const s = useSyncStatus();
+  if (s.state === "ok") return null;
+  return (
+    <span
+      title={s.message}
+      className={cn(
+        "hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-medium sm:inline-flex",
+        s.state === "saving" ? "bg-white text-muted shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" : "bg-[#fdecec] text-[#c40014]",
+      )}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", s.state === "saving" ? "animate-pulse bg-[#0071e3]" : "bg-[#d70015]")} />
+      {s.state === "saving" ? "Salvando…" : "Erro ao salvar"}
+    </span>
   );
 }
 

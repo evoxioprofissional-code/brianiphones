@@ -20,6 +20,7 @@ import {
 import { deleteProduct, duplicateProduct, saveProduct, useDB } from "@/lib/store";
 import { installment, money, slugify, uid } from "@/lib/format";
 import { compressImage } from "@/lib/image";
+import { hasSupabase, uploadProductImage } from "@/lib/supabase";
 import { productTemplate } from "@/lib/defaults";
 import { CATEGORY_LABEL, IPHONE_MODELS, STORAGE_OPTIONS } from "@/lib/site";
 import type { Category, Condition, Product, ProductSpec } from "@/lib/types";
@@ -464,14 +465,20 @@ function ImageManager({ images, onChange }: { images: string[]; onChange: (v: st
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
   const [drag, setDrag] = useState<number | null>(null);
+  const [error, setError] = useState("");
 
   const add = async (files: FileList | File[]) => {
     const list = [...files].filter((f) => f.type.startsWith("image/")).slice(0, 12 - images.length);
     if (!list.length) return;
     setBusy(true);
+    setError("");
     try {
-      const out = await Promise.all(list.map((f) => compressImage(f, 1200, 0.82)));
+      const compressed = await Promise.all(list.map((f) => compressImage(f, 1600, 0.85)));
+      // com banco conectado, a foto vai pro Storage e o produto guarda só o link
+      const out = hasSupabase ? await Promise.all(compressed.map(uploadProductImage)) : compressed;
       onChange([...images, ...out]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível enviar a foto");
     } finally {
       setBusy(false);
     }
@@ -549,6 +556,7 @@ function ImageManager({ images, onChange }: { images: string[]; onChange: (v: st
         )}
       </div>
       <input ref={input} type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && add(e.target.files)} />
+      {error && <p className="mt-3 text-[12.5px] text-bad">Erro ao enviar: {error}</p>}
       {images.length === 0 && <p className="mt-3 text-[12.5px] text-muted">Sem foto, a loja mostra uma ilustração do aparelho na cor escolhida.</p>}
     </div>
   );

@@ -285,3 +285,79 @@ input[type="range"].range::-moz-range-thumb {
     padding-bottom: 84px;
   }
 }
+
+/* Tela de login do painel */
+@keyframes login-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.login-in {
+  animation: login-in 0.9s var(--ease-out-quint) both;
+}
+@keyframes login-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -14px;
+  }
+}
+.login-float {
+  animation: login-float 7s ease-in-out infinite;
+}
+.login-float-slow {
+  animation: login-float 9s ease-in-out infinite;
+  animation-delay: -3s;
+}
+@keyframes login-shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(4px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-8px);
+  }
+  40%,
+  60% {
+    transform: translateX(8px);
+  }
+}
+.login-shake {
+  animation: login-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-in,
+  .login-float,
+  .login-float-slow,
+  .login-shake {
+    animation: none;
+  }
+}
+
+/* iPhone: campo com letra menor que 16px faz o Safari dar zoom ao tocar */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* nada de rolagem lateral acidental no celular */
+html,
+body {
+  overflow-x: clip;
+}
