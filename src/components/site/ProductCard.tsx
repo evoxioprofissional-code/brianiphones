@@ -17,55 +17,63 @@ export function ProductCard({ p, className = "" }: { p: Product; className?: str
     <TiltCard
       max={10}
       glareOpacity={0.08}
-      className={`group @container flex flex-col rounded-[var(--radius-card,18px)] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.08)] sm:p-5 ${className}`}
+      className={`group @container flex flex-col rounded-[var(--radius-card,18px)] bg-white p-3 shadow-[0_2px_12px_rgba(0,0,0,0.08)] sm:p-5 ${className}`}
     >
       <Link href={`/loja/${p.slug}`} className="flex flex-1 flex-col">
-        <p className="flex min-h-[18px] items-center gap-2 text-[12px] font-semibold @min-[220px]:text-[13px]">
+        <p className="flex min-h-[16px] items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] font-semibold @min-[220px]:text-[13px]">
           <span className={p.condition === "novo" ? "text-highlight" : "text-muted"}>{COND[p.condition]}</span>
-          {p.battery && p.condition !== "novo" ? <span className="font-normal text-muted tabular">· bateria {p.battery}%</span> : null}
+          {p.battery && p.condition !== "novo" ? <span className="truncate font-normal text-muted tabular">· bateria {p.battery}%</span> : null}
           {off > 0 ? <span className="ml-auto text-highlight tabular">-{off}%</span> : null}
         </p>
-        {p.badge ? (
-          <span className="mt-2 inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style={{ background: p.badgeColor || "var(--color-primary)" }}>
-            {p.badge}
-          </span>
-        ) : null}
 
-        <div className="relative mt-3 aspect-square">
+        {/* etiquetas numa linha própria (reservada em todos os cards), sem cobrir a foto */}
+        <div className="mt-1.5 flex h-[20px] items-center gap-1 overflow-hidden @min-[220px]:mt-2 @min-[220px]:h-[22px]">
+          {p.badge ? (
+            <span
+              className="shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold leading-[1.4] text-white @min-[220px]:text-[11px]"
+              style={{ background: p.badgeColor || "var(--color-primary)" }}
+            >
+              {p.badge}
+            </span>
+          ) : null}
+          {p.stock === 1 ? (
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-highlight/10 px-2 py-0.5 text-[10px] font-semibold leading-[1.4] text-highlight @min-[220px]:text-[11px]">
+              Última unidade
+            </span>
+          ) : null}
+        </div>
+
+        <div className="relative mt-1.5 aspect-square @min-[220px]:mt-2">
           <div
             className={`absolute inset-0 transition-transform duration-700 ease-[var(--ease-out-quint)] group-hover:scale-[1.04] ${
-              hasPhoto ? "overflow-hidden rounded-[12px]" : "flex items-center justify-center p-[10%]"
+              hasPhoto ? "overflow-hidden rounded-[12px]" : "flex items-center justify-center p-[12%]"
             }`}
           >
             <ProductMedia p={p} />
           </div>
         </div>
 
-        <div className="mt-3 flex justify-center">
-          <span className="h-3 w-3 rounded-full ring-1 ring-black/10 ring-offset-2" style={{ background: p.colorHex }} title={p.color} />
-        </div>
-
-        <h3 className="mt-4 line-clamp-2 text-[15px] font-semibold leading-[1.25] tracking-[-0.015em] @min-[220px]:text-[17px]">
+        <h3 className="mt-2.5 line-clamp-2 min-h-[2.5em] text-[13.5px] font-semibold leading-[1.25] tracking-[-0.015em] @min-[220px]:mt-4 @min-[220px]:text-[17px]">
           {p.name} {p.storage}
         </h3>
-        <p className="mt-1 truncate text-[12.5px] text-muted @min-[220px]:text-[14px]">{p.color}</p>
+        <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted @min-[220px]:mt-1 @min-[220px]:text-[14px]">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10" style={{ background: p.colorHex }} />
+          <span className="truncate">{p.color}</span>
+        </p>
 
-        <div className="mt-auto pt-4">
-          {p.priceFrom ? <p className="text-[12px] text-faint line-through tabular">{money(p.priceFrom)}</p> : null}
+        <div className="mt-auto pt-2.5 @min-[220px]:pt-4">
+          {p.priceFrom ? <p className="text-[11px] text-faint line-through tabular @min-[220px]:text-[12px]">{money(p.priceFrom)}</p> : null}
           <p className="text-[15px] font-semibold tabular @min-[220px]:text-[17px]">{money(p.price)}</p>
-          <p className="mt-0.5 text-[11.5px] text-muted tabular @min-[220px]:text-[12.5px]">ou 12x de {installment(p.price)}</p>
+          <p className="mt-0.5 text-[11px] text-muted tabular @min-[220px]:text-[12.5px]">12x de {installment(p.price)}</p>
         </div>
       </Link>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <button
-          onClick={() => addToCart(p)}
-          className="btn-accent h-8 rounded-full px-4 text-[13px] font-medium @min-[220px]:h-9 @min-[220px]:text-[14px]"
-        >
-          Comprar
-        </button>
-        {p.stock === 1 && <span className="text-right text-[11.5px] font-medium leading-tight text-highlight">Última unidade</span>}
-      </div>
+      <button
+        onClick={() => addToCart(p)}
+        className="btn-accent mt-3 h-8 w-full rounded-full text-[13px] font-medium @min-[220px]:mt-4 @min-[220px]:h-9 @min-[220px]:w-fit @min-[220px]:px-5 @min-[220px]:text-[14px]"
+      >
+        Comprar
+      </button>
     </TiltCard>
   );
 }
