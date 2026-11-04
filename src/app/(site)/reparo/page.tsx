@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { REPAIR_SERVICES } from "@/lib/site";
 import { RepairForm } from "@/components/site/RepairForm";
 import { Reveal } from "@/components/site/Reveal";
-import { TiltCard } from "@/components/ui/be-ui-tilt-card";
+import { TiltCard } from "@/components/ui/tilt-card";
 
 export const metadata: Metadata = {
   title: "Reparo",

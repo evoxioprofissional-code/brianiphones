@@ -11,7 +11,7 @@ import { DeviceArt } from "./DeviceArt";
 import { Reveal } from "./Reveal";
 import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Pin, Shield, Store, Swap, Truck } from "@/components/ui/Icons";
 import { useSettings } from "./useSettings";
-import { TiltCard } from "@/components/ui/be-ui-tilt-card";
+import { TiltCard } from "@/components/ui/tilt-card";
 
 /* Frase padrão quando o slide não tem frase */
 const TAGLINE: Record<string, string> = {

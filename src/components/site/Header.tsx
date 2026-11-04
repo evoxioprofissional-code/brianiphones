@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { Header as Header2, type HeaderLink } from "@/components/ui/header-2";
+import { Header as Header2, type HeaderLink } from "@/components/ui/floating-header";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./Logo";
 import { useSettings } from "./useSettings";

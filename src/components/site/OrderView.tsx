@@ -9,7 +9,7 @@ import { dateTime, money, moneyCents } from "@/lib/format";
 import { waLink } from "@/lib/whatsapp";
 import { ORDER_STATUS_LABEL, PAYMENT_LABEL } from "@/lib/site";
 import { Check, WhatsApp } from "@/components/ui/Icons";
-import { TiltCard } from "@/components/ui/be-ui-tilt-card";
+import { TiltCard } from "@/components/ui/tilt-card";
 
 export function OrderView() {
   const { id } = useParams<{ id: string }>();

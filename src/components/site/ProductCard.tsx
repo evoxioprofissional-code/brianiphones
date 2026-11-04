@@ -5,7 +5,7 @@ import type { Product } from "@/lib/types";
 import { installment, money } from "@/lib/format";
 import { addToCart } from "@/lib/cart";
 import { ProductMedia } from "./ProductMedia";
-import { TiltCard } from "@/components/ui/be-ui-tilt-card";
+import { TiltCard } from "@/components/ui/tilt-card";
 
 const COND = { novo: "Novo", seminovo: "Seminovo", vitrine: "Vitrine" } as const;
 
