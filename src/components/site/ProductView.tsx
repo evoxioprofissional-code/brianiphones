@@ -128,6 +128,12 @@ function BuyBox({ p, whatsapp }: { p: Product; whatsapp: string }) {
         <h1 className="mt-4 text-[28px] font-bold leading-[1.1] tracking-[-0.03em] md:text-[32px]">
           {p.name} {p.storage}
         </h1>
+        {p.subtitle ? <p className="mt-2 text-[15px] leading-[1.45] text-graphite">{p.subtitle}</p> : null}
+        {p.badge ? (
+          <span className="mt-3 inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold text-white" style={{ background: p.badgeColor || "var(--color-primary)" }}>
+            {p.badge}
+          </span>
+        ) : null}
         <p className="mt-2 flex items-center gap-2 text-[14px] text-muted">
           <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: p.colorHex }} />
           {p.color}
@@ -137,7 +143,7 @@ function BuyBox({ p, whatsapp }: { p: Product; whatsapp: string }) {
           {p.priceFrom ? (
             <p className="flex items-center gap-2 text-[14px] text-muted tabular">
               <span className="line-through">{money(p.priceFrom)}</span>
-              {off > 0 && <span className="text-[13px] font-semibold text-[#bf4800]">-{off}%</span>}
+              {off > 0 && <span className="text-[13px] font-semibold text-highlight">-{off}%</span>}
             </p>
           ) : null}
           <p className="mt-1 text-[38px] font-bold leading-none tracking-[-0.035em] tabular">{money(p.price)}</p>
@@ -260,52 +266,86 @@ function ShippingCalc({ subtotal }: { subtotal: number }) {
 }
 
 function Details({ p }: { p: Product }) {
-  const specs: [string, string][] = [
+  const fallback: [string, string][] = [
     ["Categoria", CATEGORY_LABEL[p.category]],
     ["Modelo", p.name],
     [p.category === "watch" ? "Conexão" : "Armazenamento", p.storage],
     ["Cor", p.color],
     ["Estado", CONDITION_LABEL[p.condition]],
-    ...(p.battery ? ([["Saúde da bateria", `${p.battery}%`]] as [string, string][]) : []),
+    ...(p.battery && p.condition !== "novo" ? ([["Saúde da bateria", `${p.battery}%`]] as [string, string][]) : []),
+  ];
+  const specs: [string, string][] = [
+    ...(p.specs?.filter((x) => x.label && x.value).map((x) => [x.label, x.value] as [string, string]) ?? fallback),
     ["Garantia da loja", `${p.warrantyMonths} ${p.warrantyMonths === 1 ? "mês" : "meses"}`],
   ];
+  const checks =
+    p.condition === "novo"
+      ? ["Produto novo, lacrado de fábrica.", "Garantia Apple a partir da ativação, mais a garantia da loja."]
+      : ["Bateria medida e informada no anúncio.", "Face ID, câmeras, tela, som e carregamento testados.", "IMEI consultado e iCloud desvinculado.", "Se alguma peça foi trocada, está escrito aqui."];
+
   return (
-    <div className="mt-6 grid gap-3 sm:mt-10 sm:gap-6 lg:grid-cols-[1fr_420px] lg:gap-8">
-      <div className="surface rounded-[20px] p-5 md:p-7">
-        <h2 className="text-[20px] font-bold tracking-[-0.02em]">Ficha técnica</h2>
-        <dl className="mt-4 text-[14px]">
-          {specs.map(([k, v], i) => (
-            <div key={k} className={`grid grid-cols-[130px_1fr] gap-3 rounded-[6px] px-3 py-2.5 sm:grid-cols-[160px_1fr] sm:gap-4 ${i % 2 ? "" : "bg-paper/50"}`}>
-              <dt className="text-muted">{k}</dt>
-              <dd className="font-medium">{v}</dd>
+    <div className="mt-6 space-y-3 sm:mt-10 sm:space-y-6">
+      {p.description || p.highlights?.length ? (
+        <div className="surface rounded-[20px] p-5 md:p-8">
+          <h2 className="text-[22px] font-bold tracking-[-0.02em]">Sobre o produto</h2>
+          {p.description ? <p className="mt-3 max-w-[760px] whitespace-pre-line text-[15.5px] leading-[1.65] text-graphite">{p.description}</p> : null}
+          {p.highlights?.length ? (
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {p.highlights.map((h) => (
+                <li key={h} className="flex items-start gap-3 rounded-2xl bg-white p-4 text-[14px] font-medium leading-[1.35]">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent text-[11px] text-white">✓</span>
+                  {h}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 sm:gap-6 lg:grid-cols-[1fr_420px] lg:gap-8">
+        <div className="surface rounded-[20px] p-5 md:p-7">
+          <h2 className="text-[20px] font-bold tracking-[-0.02em]">Ficha técnica</h2>
+          <dl className="mt-4 text-[14px]">
+            {specs.map(([k, v], i) => (
+              <div key={k + i} className={`grid grid-cols-[130px_1fr] gap-3 rounded-[8px] px-3 py-2.5 sm:grid-cols-[180px_1fr] sm:gap-4 ${i % 2 ? "" : "bg-white"}`}>
+                <dt className="text-muted">{k}</dt>
+                <dd className="font-medium">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {p.notes ? (
+            <>
+              <h3 className="mt-8 text-[16px] font-semibold">Sobre este aparelho</h3>
+              <p className="mt-2 text-[14.5px] leading-[1.65] text-graphite">{p.notes}</p>
+            </>
+          ) : null}
+        </div>
+        <div className="space-y-3 sm:space-y-6">
+          <div className="surface rounded-[20px] p-5 md:p-7">
+            <h2 className="text-[20px] font-bold tracking-[-0.02em]">{p.condition === "novo" ? "Lacrado na caixa" : "Revisado antes de vender"}</h2>
+            <ul className="mt-4 space-y-3 text-[14px] leading-[1.5] text-graphite">
+              {checks.map((t) => (
+                <li key={t} className="flex gap-2.5">
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-ink" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          {p.inBox?.length ? (
+            <div className="surface rounded-[20px] p-5 md:p-7">
+              <h2 className="text-[20px] font-bold tracking-[-0.02em]">O que vem na caixa</h2>
+              <ul className="mt-4 space-y-2.5 text-[14px] text-graphite">
+                {p.inBox.map((t) => (
+                  <li key={t} className="flex items-center gap-2.5">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white text-[11px] text-accent">✓</span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
-        </dl>
-        {p.notes ? (
-          <>
-            <h3 className="mt-8 text-[16px] font-semibold">Sobre este aparelho</h3>
-            <p className="mt-2 text-[14.5px] leading-[1.65] text-graphite">{p.notes}</p>
-          </>
-        ) : null}
-      </div>
-      <div className="surface rounded-[20px] p-5 md:p-7">
-        <h2 className="text-[20px] font-bold tracking-[-0.02em]">{p.condition === "novo" ? "Lacrado na caixa" : "Revisado antes de vender"}</h2>
-        <ul className="mt-4 space-y-3 text-[14px] leading-[1.5] text-graphite">
-          {(p.condition === "novo"
-            ? ["Produto novo, lacrado de fábrica.", "Nota e caixa originais.", "Garantia Apple a partir da ativação, mais a garantia da loja."]
-            : [
-                "Bateria medida e informada no anúncio.",
-                "Face ID, câmeras, tela, som e carregamento testados.",
-                "IMEI consultado e iCloud desvinculado.",
-                "Se alguma peça foi trocada, está escrito aqui.",
-              ]
-          ).map((t) => (
-            <li key={t} className="flex gap-2.5">
-              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-ink" />
-              {t}
-            </li>
-          ))}
-        </ul>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -17,14 +17,19 @@ export function ProductCard({ p, className = "" }: { p: Product; className?: str
     <TiltCard
       max={10}
       glareOpacity={0.08}
-      className={`group @container flex flex-col rounded-[18px] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.08)] sm:p-5 ${className}`}
+      className={`group @container flex flex-col rounded-[var(--radius-card,18px)] bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.08)] sm:p-5 ${className}`}
     >
       <Link href={`/loja/${p.slug}`} className="flex flex-1 flex-col">
         <p className="flex min-h-[18px] items-center gap-2 text-[12px] font-semibold @min-[220px]:text-[13px]">
-          <span className={p.condition === "novo" ? "text-[#bf4800]" : "text-muted"}>{COND[p.condition]}</span>
+          <span className={p.condition === "novo" ? "text-highlight" : "text-muted"}>{COND[p.condition]}</span>
           {p.battery && p.condition !== "novo" ? <span className="font-normal text-muted tabular">· bateria {p.battery}%</span> : null}
-          {off > 0 ? <span className="ml-auto text-[#bf4800] tabular">-{off}%</span> : null}
+          {off > 0 ? <span className="ml-auto text-highlight tabular">-{off}%</span> : null}
         </p>
+        {p.badge ? (
+          <span className="mt-2 inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style={{ background: p.badgeColor || "var(--color-primary)" }}>
+            {p.badge}
+          </span>
+        ) : null}
 
         <div className="relative mt-3 aspect-square">
           <div
@@ -59,7 +64,7 @@ export function ProductCard({ p, className = "" }: { p: Product; className?: str
         >
           Comprar
         </button>
-        {p.stock === 1 && <span className="text-right text-[11.5px] font-medium leading-tight text-[#bf4800]">Última unidade</span>}
+        {p.stock === 1 && <span className="text-right text-[11.5px] font-medium leading-tight text-highlight">Última unidade</span>}
       </div>
     </TiltCard>
   );

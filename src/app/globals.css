@@ -23,6 +23,7 @@
   --color-accent-2: #2997ff;
   --color-accent-soft: #e8f2fd;
   --color-pix: #1f8f7a;
+  --color-highlight: #bf4800;
   --color-ok: #1f8a3e;
   --color-warn: #b25e09;
   --color-bad: #d70015;
@@ -134,9 +135,9 @@
 @utility btn-accent {
   color: #fff;
   background: var(--color-accent);
-  transition: background 0.2s, transform 0.2s;
+  transition: filter 0.2s, transform 0.2s;
   &:hover {
-    background: #0077ed;
+    filter: brightness(1.08);
   }
   &:active {
     transform: scale(0.98);
@@ -146,10 +147,10 @@
 /* Botão preto */
 @utility btn-ink {
   color: #fff;
-  background: var(--color-ink);
-  transition: background 0.2s, transform 0.2s;
+  background: var(--color-primary);
+  transition: filter 0.2s, transform 0.2s;
   &:hover {
-    background: #000;
+    filter: brightness(0.82);
   }
   &:active {
     transform: scale(0.98);

@@ -1,5 +1,6 @@
-import type { DB, Expense, Lead, LeadStatus, Order, OrderStatus, Product, Sale, VisitDay } from "./types";
+import type { CustomerMeta, DB, Expense, Lead, LeadStatus, Order, OrderStatus, Product, Sale, Storefront, VisitDay } from "./types";
 import { DEFAULT_SETTINGS } from "./site";
+import { DEFAULT_SHIPPING, DEFAULT_STOREFRONT, productTemplate } from "./defaults";
 import { dayKey, slugify } from "./format";
 
 type P = Omit<Product, "id" | "slug" | "createdAt" | "images" | "active"> & { active?: boolean };
@@ -52,6 +53,11 @@ export function createSeed(): DB {
     slug: slugify(`${p.name}-${p.storage}-${p.color}`),
     images: [],
     createdAt: daysAgo(60 - i).toISOString(),
+    sku: `BI-${String(i + 1).padStart(4, "0")}`,
+    weightGrams: p.category === "macbook" ? 2200 : p.category === "ipad" ? 900 : 600,
+    badge: i === 0 ? "Lançamento" : i === 4 ? "Oferta" : i === 7 ? "Mais vendido" : undefined,
+    badgeColor: i === 4 ? "#d70015" : i === 7 ? "#1f8a3e" : undefined,
+    ...productTemplate(p),
   }));
 
   // Visitas — 90 dias, com fim de semana mais forte e leve tendência de alta
@@ -171,36 +177,83 @@ export function createSeed(): DB {
   const pastExpenses = expenses.filter((e) => new Date(e.date) <= now);
   pastExpenses.sort((a, b) => b.date.localeCompare(a.date));
 
-  // Pedidos da loja online — 14 dias
+  // Pedidos da loja online — 21 dias, com histórico, rastreio e endereço
   const orders: Order[] = [];
-  const ostatus: OrderStatus[] = ["entregue", "entregue", "enviado", "pago", "separando", "cancelado"];
-  const ships: Order["shipping"][] = [
-    { method: "retirada", label: "Retirar na loja", price: 0, days: "Hoje" },
-    { method: "local", label: "Entrega em Itatiba", price: 15, days: "No mesmo dia" },
-    { method: "sedex", label: "SEDEX", price: 48, days: "2 a 4 dias úteis" },
-    { method: "pac", label: "PAC", price: 32, days: "5 a 9 dias úteis" },
+  const people = [
+    { name: "Lucas Moreira", city: "Itatiba", uf: "SP", cep: "13250-410", street: "Rua Coronel Camilo Pires", district: "Centro" },
+    { name: "Fernanda Ribeiro", city: "Jundiaí", uf: "SP", cep: "13201-005", street: "Av. Jundiaí", district: "Anhangabaú" },
+    { name: "Gabriel Souza", city: "Campinas", uf: "SP", cep: "13024-000", street: "Av. Norte-Sul", district: "Cambuí" },
+    { name: "Juliana Prado", city: "São Paulo", uf: "SP", cep: "01310-100", street: "Av. Paulista", district: "Bela Vista" },
+    { name: "Rafael Teixeira", city: "Bragança Paulista", uf: "SP", cep: "12900-000", street: "Rua Coronel Teófilo Leme", district: "Centro" },
+    { name: "Camila Oliveira", city: "Belo Horizonte", uf: "MG", cep: "30130-010", street: "Av. Afonso Pena", district: "Centro" },
+    { name: "Bruno Almeida", city: "Itatiba", uf: "SP", cep: "13252-000", street: "Av. Barão de Itapema", district: "Jardim Ipê" },
+    { name: "Larissa Costa", city: "Rio de Janeiro", uf: "RJ", cep: "22071-000", street: "Av. Atlântica", district: "Copacabana" },
+    { name: "Thiago Barbosa", city: "Louveira", uf: "SP", cep: "13290-000", street: "Rua Armando Steck", district: "Centro" },
+    { name: "Mariana Lopes", city: "Curitiba", uf: "PR", cep: "80010-000", street: "Rua XV de Novembro", district: "Centro" },
+    { name: "Pedro Henrique Lima", city: "Morungaba", uf: "SP", cep: "13260-000", street: "Rua Bento Lopes", district: "Centro" },
+    { name: "Ana Clara Vieira", city: "Itatiba", uf: "SP", cep: "13253-200", street: "Rua Prudente de Moraes", district: "Vila Brasileira" },
   ];
-  for (let i = 0; i < 18; i++) {
-    const p = products[Math.floor(r() * 12)];
-    const ago = Math.floor((i / 18) * 14);
-    const ship = ships[Math.floor(r() * ships.length)];
-    const pay = (["pix", "cartao", "cartao", "boleto"] as const)[Math.floor(r() * 4)];
-    const status: OrderStatus = i < 2 ? "aguardando_pagamento" : i < 4 ? "pago" : ostatus[Math.floor(r() * ostatus.length)];
-    const name = names[Math.floor(r() * names.length)];
+  const flow: OrderStatus[] = ["aguardando_pagamento", "pago", "separando", "embalado", "enviado", "entregue"];
+  const finalOf = [5, 5, 5, 4, 4, 3, 2, 1, 5, 4, 5, -1, 5, 3, 5, 4, 2, 5, 5, 1, 0, 0, 5, 4];
+  const step = (iso: string, h: number) => new Date(new Date(iso).getTime() + h * 36e5).toISOString();
+  for (let i = 0; i < 24; i++) {
+    const who = people[i % people.length];
+    const local = who.city === "Itatiba";
+    const pickup = local && i % 3 === 0;
+    const p = products[(i * 5) % 12];
+    const p2 = i % 6 === 2 ? products[18] : null;
+    const ago = Math.floor((i / 24) * 21);
+    const createdAt = daysAgo(ago, 9 + Math.floor(r() * 11)).toISOString();
+    const ship: Order["shipping"] = pickup
+      ? { method: "retirada", label: "Retirar na loja", price: 0, days: "Pronto em até 2 horas" }
+      : local
+        ? { method: "local", label: "Entrega em Itatiba", price: 0, days: "No mesmo dia" }
+        : i % 2
+          ? { method: "sedex", label: "SEDEX", price: 52 + (i % 5) * 4, days: "2 a 4 dias úteis" }
+          : { method: "pac", label: "PAC", price: 34 + (i % 4) * 3, days: "5 a 9 dias úteis" };
+    if (!pickup) {
+      ship.address = { cep: who.cep, street: who.street, number: String(100 + ((i * 37) % 900)), complement: i % 4 === 0 ? "Apto 42" : "", district: who.district, city: who.city, uf: who.uf };
+    }
+    const pay = (["pix", "cartao", "cartao", "boleto"] as const)[i % 4];
+    const fi = finalOf[i];
+    const status: OrderStatus = fi === -1 ? "cancelado" : flow[ago <= 0 ? Math.min(fi, 1) : fi];
+    const items = [{ productId: p.id, name: p.name, detail: `${p.storage} · ${p.color}`, price: p.price, qty: 1 }];
+    if (p2) items.push({ productId: p2.id, name: p2.name, detail: `${p2.storage} · ${p2.color}`, price: p2.price, qty: 1 });
+    const subtotal = items.reduce((a, it) => a + it.price * it.qty, 0);
+    const timeline: Order["timeline"] = [{ at: createdAt, status: "aguardando_pagamento", text: "Pedido feito no site" }];
+    const reached = status === "cancelado" ? 0 : flow.indexOf(status);
+    const texts = ["", "Pagamento aprovado pelo Mercado Pago", "Pedido em separação", ship.method === "retirada" ? "Pronto para retirada na loja" : "Embalado e etiquetado", "Postado / saiu para entrega", "Entregue ao cliente"];
+    for (let k = 1; k <= reached; k++) timeline.push({ at: step(createdAt, k * (k < 4 ? 2 : 20)), status: flow[k], text: texts[k] });
+    if (status === "cancelado") timeline.push({ at: step(createdAt, 30), status: "cancelado", text: "Pagamento não aprovado, pedido cancelado" });
+    const sent = reached >= 4 && (ship.method === "sedex" || ship.method === "pac");
     orders.push({
       id: `o${i}`,
-      number: String(1018 - i),
-      createdAt: daysAgo(ago, 9 + Math.floor(r() * 11)).toISOString(),
+      number: String(1024 - i),
+      createdAt,
       status,
-      customer: { name, email: "cliente@exemplo.com", phone: "11999990000", cpf: "000.000.000-00" },
+      customer: {
+        name: who.name,
+        email: who.name.toLowerCase().normalize("NFD").replace(/[^a-z ]/g, "").split(" ").slice(0, 2).join(".") + "@email.com",
+        phone: `(11) 9${String(8000 + ((i * 731) % 1999)).padStart(4, "0")}-${String(1000 + ((i * 457) % 8999)).padStart(4, "0")}`,
+        cpf: `${String(100 + i).padStart(3, "0")}.${String(200 + i * 3).slice(0, 3)}.${String(300 + i * 7).slice(0, 3)}-${String(10 + i).slice(-2)}`,
+      },
       shipping: ship,
       payment: pay,
-      installments: pay === "cartao" ? [1, 6, 10, 12][Math.floor(r() * 4)] : 1,
-      items: [{ productId: p.id, name: p.name, detail: `${p.storage} · ${p.color}`, price: p.price, qty: 1 }],
-      subtotal: p.price,
-      total: p.price + ship.price,
+      installments: pay === "cartao" ? [1, 6, 10, 12][i % 4] : 1,
+      items,
+      subtotal,
+      total: subtotal + ship.price,
+      tracking: sent ? { carrier: ship.method === "sedex" ? "Correios SEDEX" : "Correios PAC", code: `QB${String(482019310 + i * 7919).slice(0, 9)}BR` } : undefined,
+      timeline,
+      printed: reached >= 3 ? { label: step(createdAt, 7), slip: step(createdAt, 6) } : undefined,
     });
   }
 
-  return { version: 1, products, leads, orders, sales, expenses: pastExpenses, visits, settings: DEFAULT_SETTINGS };
+  const storefront: Storefront = JSON.parse(JSON.stringify(DEFAULT_STOREFRONT));
+  const customers: Record<string, CustomerMeta> = {
+    "lucas.moreira@email.com": { vip: true, tags: ["Cliente fiel"], notes: "Sempre compra na troca. Prefere retirar na loja." },
+    "juliana.prado@email.com": { tags: ["São Paulo"] },
+  };
+
+  return { version: 2, customers, storefront, products, leads, orders, sales, expenses: pastExpenses, visits, settings: { ...DEFAULT_SETTINGS, shipping: { ...DEFAULT_SHIPPING } } };
 }

@@ -1,328 +1,338 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { deleteProduct, saveProduct, useDB } from "@/lib/store";
-import { money, slugify, uid } from "@/lib/format";
-import { compressImage } from "@/lib/image";
-import { CATEGORY_LABEL, CONDITION_LABEL, STORAGE_OPTIONS } from "@/lib/site";
-import type { Category, Condition, Product } from "@/lib/types";
-import { Btn, Drawer, PageHead } from "@/components/admin/AdminShell";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Copy, Download, Eye, EyeOff, LayoutGrid, List, MoreHorizontal, Package, Pencil, Plus, Star, Trash2, X } from "lucide-react";
+import { deleteProduct, deleteProducts, duplicateProduct, patchProducts, saveProduct, useDB } from "@/lib/store";
+import { compactMoney, money } from "@/lib/format";
+import { downloadCsv } from "@/lib/admin";
+import { CATEGORY_LABEL, CONDITION_LABEL } from "@/lib/site";
+import type { Category, Product } from "@/lib/types";
+import {
+  AButton,
+  ALink,
+  Badge,
+  Checkbox,
+  EmptyState,
+  Kpi,
+  PageBody,
+  PageHeader,
+  Panel,
+  SearchInput,
+  Segmented,
+  SelectInput,
+  Switch,
+  Table,
+  Td,
+  Th,
+} from "@/components/admin/kit";
 import { ProductMedia } from "@/components/site/ProductMedia";
-import { Field, Input, Select, Textarea } from "@/components/ui/Form";
-import { Camera, Close, Edit, Plus, Search } from "@/components/ui/Icons";
+import { cn } from "@/lib/utils";
 
-const empty = (): Product => ({
-  id: uid(),
-  slug: "",
-  name: "",
-  category: "iphone",
-  condition: "seminovo",
-  storage: "128 GB",
-  color: "",
-  colorHex: "#2f2f31",
-  battery: 90,
-  price: 0,
-  cost: 0,
-  stock: 1,
-  featured: false,
-  active: true,
-  warrantyMonths: 3,
-  notes: "",
-  images: [],
-  createdAt: new Date().toISOString(),
-});
+const CATS: (Category | "todos")[] = ["todos", "iphone", "macbook", "ipad", "watch", "acessorio"];
+type Status = "todos" | "ativos" | "inativos" | "sem-estoque" | "destaque";
+type Sort = "recentes" | "nome" | "preco-desc" | "preco-asc" | "estoque";
 
 export default function ProdutosPage() {
+  return (
+    <Suspense fallback={null}>
+      <Produtos />
+    </Suspense>
+  );
+}
+
+function Produtos() {
   const db = useDB();
+  const router = useRouter();
+  const params = useSearchParams();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<Category | "todos">("todos");
-  const [editing, setEditing] = useState<Product | null>(null);
+  const [status, setStatus] = useState<Status>((params.get("f") as Status) || "todos");
+  const [cond, setCond] = useState("");
+  const [sort, setSort] = useState<Sort>("recentes");
+  const [view, setView] = useState<"lista" | "grade">("lista");
+  const [sel, setSel] = useState<string[]>([]);
 
   const list = useMemo(() => {
     let l = db?.products ?? [];
     if (cat !== "todos") l = l.filter((p) => p.category === cat);
-    if (q.trim()) l = l.filter((p) => `${p.name} ${p.color} ${p.storage}`.toLowerCase().includes(q.toLowerCase()));
-    return l;
-  }, [db, q, cat]);
+    if (cond) l = l.filter((p) => p.condition === cond);
+    if (status === "ativos") l = l.filter((p) => p.active);
+    if (status === "inativos") l = l.filter((p) => !p.active);
+    if (status === "sem-estoque") l = l.filter((p) => p.stock === 0);
+    if (status === "destaque") l = l.filter((p) => p.featured);
+    const t = q.trim().toLowerCase();
+    if (t) l = l.filter((p) => `${p.name} ${p.storage} ${p.color} ${p.sku ?? ""} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(t));
+    const s = [...l];
+    if (sort === "nome") s.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === "preco-desc") s.sort((a, b) => b.price - a.price);
+    if (sort === "preco-asc") s.sort((a, b) => a.price - b.price);
+    if (sort === "estoque") s.sort((a, b) => a.stock - b.stock);
+    if (sort === "recentes") s.sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt));
+    return s;
+  }, [db, cat, cond, status, q, sort]);
 
   if (!db) return null;
-  const stockValue = db.products.filter((p) => p.active).reduce((a, p) => a + p.price * p.stock, 0);
-  const units = db.products.filter((p) => p.active).reduce((a, p) => a + p.stock, 0);
+  const P = db.products;
+  const active = P.filter((p) => p.active);
+  const stockValue = active.reduce((a, p) => a + p.price * p.stock, 0);
+  const withCost = active.filter((p) => p.cost);
+  const margin = withCost.length ? withCost.reduce((a, p) => a + (p.price - (p.cost ?? 0)) / p.price, 0) / withCost.length : 0;
+
+  const allSel = list.length > 0 && list.every((p) => sel.includes(p.id));
+  const toggle = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
     <>
-      <PageHead
-        eyebrow={`${units} unidades · ${money(stockValue)} em estoque`}
+      <PageHeader
         title="Produtos"
+        subtitle={`${P.length} cadastrados · ${active.length} à venda`}
         actions={
-          <Btn onClick={() => setEditing(empty())}>
-            <Plus size={16} /> Novo produto
-          </Btn>
+          <>
+            <AButton
+              onClick={() =>
+                downloadCsv("produtos.csv", [
+                  ["SKU", "Nome", "Categoria", "Estado", "Armazenamento", "Cor", "Preço", "Preço de", "Custo", "Estoque", "Ativo", "Destaque"],
+                  ...list.map((p) => [p.sku ?? "", p.name, CATEGORY_LABEL[p.category], CONDITION_LABEL[p.condition], p.storage, p.color, p.price, p.priceFrom ?? "", p.cost ?? "", p.stock, p.active ? "sim" : "não", p.featured ? "sim" : "não"]),
+                ])
+              }
+            >
+              <Download size={16} /> Exportar
+            </AButton>
+            <ALink href="/admin/produtos/novo" variant="primary">
+              <Plus size={16} /> Novo produto
+            </ALink>
+          </>
         }
       />
-
-      <div className="px-5 py-6 md:px-10">
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="relative w-full sm:w-64">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar"
-              className="h-10 w-full rounded-full border border-line bg-card pl-9 pr-3 text-[13px] outline-none focus:border-ink/50"
-            />
-          </label>
-          <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-            {(["todos", "iphone", "macbook", "ipad", "watch", "acessorio"] as const).map((c) => (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`h-10 shrink-0 rounded-full px-4 text-[13px] ${cat === c ? "bg-ink text-paper" : "border border-line bg-card text-graphite"}`}
-              >
-                {c === "todos" ? "Todos" : CATEGORY_LABEL[c]}
-              </button>
-            ))}
-          </div>
+      <PageBody className="space-y-5">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <Kpi label="À venda" value={active.length} icon={<Package size={18} />} tone="blue" hint={`${active.reduce((a, p) => a + p.stock, 0)} unidades`} />
+          <Kpi label="Valor em estoque" value={compactMoney(stockValue)} tone="green" hint="preço de venda" />
+          <Kpi label="Margem média" value={`${(margin * 100).toFixed(0)}%`} tone="purple" hint="sobre o custo cadastrado" />
+          <Kpi label="Sem estoque" value={P.filter((p) => p.active && p.stock === 0).length} tone="red" hint="ativos zerados" />
         </div>
 
-        <div className="mt-6 overflow-x-auto rounded-[8px] border border-line bg-card">
-          <table className="w-full min-w-[820px] text-left text-[13px]">
-            <thead>
-              <tr className="border-b border-line">
-                {["Produto", "Estado", "Preço", "Margem", "Estoque", "No site", ""].map((h) => (
-                  <th key={h} className="label px-4 py-3 text-[10px] font-normal text-muted">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {list.map((p) => {
-                const margin = p.cost ? ((p.price - p.cost) / p.price) * 100 : null;
-                return (
-                  <tr key={p.id} className={`group hover:bg-paper/60 ${p.active ? "" : "opacity-50"}`}>
-                    <td className="px-4 py-3">
-                      <button onClick={() => setEditing(p)} className="flex items-center gap-3 text-left">
-                        <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[4px] bg-paper-2 p-1.5">
+        <Segmented items={CATS.map((c) => ({ value: c, label: c === "todos" ? "Todos" : CATEGORY_LABEL[c], count: c === "todos" ? P.length : P.filter((p) => p.category === c).length }))} value={cat} onChange={setCat} />
+
+        <Panel padded={false}>
+          <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.05] p-3 md:p-4">
+            <SearchInput value={q} onChange={setQ} placeholder="Nome, cor, SKU, etiqueta…" className="min-w-[220px] flex-1" />
+            <SelectInput value={status} onChange={(e) => setStatus(e.target.value as Status)} className="w-[150px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+              <option value="todos">Todos</option>
+              <option value="ativos">À venda</option>
+              <option value="inativos">Ocultos</option>
+              <option value="sem-estoque">Sem estoque</option>
+              <option value="destaque">Em destaque</option>
+            </SelectInput>
+            <SelectInput value={cond} onChange={(e) => setCond(e.target.value)} className="w-[140px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+              <option value="">Todo estado</option>
+              <option value="novo">Lacrado</option>
+              <option value="seminovo">Seminovo</option>
+              <option value="vitrine">Vitrine</option>
+            </SelectInput>
+            <SelectInput value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="w-[170px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08)]">
+              <option value="recentes">Editados recentemente</option>
+              <option value="nome">Nome (A–Z)</option>
+              <option value="preco-desc">Maior preço</option>
+              <option value="preco-asc">Menor preço</option>
+              <option value="estoque">Menor estoque</option>
+            </SelectInput>
+            <div className="inline-flex rounded-full bg-[#f5f5f7] p-1">
+              {(
+                [
+                  ["lista", <List key="l" size={15} />],
+                  ["grade", <LayoutGrid key="g" size={15} />],
+                ] as const
+              ).map(([v, icon]) => (
+                <button key={v} onClick={() => setView(v)} className={cn("grid h-8 w-9 place-items-center rounded-full", view === v ? "bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" : "text-muted")} aria-label={v}>
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {list.length === 0 ? (
+            <EmptyState icon={<Package size={24} />} title="Nenhum produto" text="Mude os filtros ou cadastre um produto novo." action={<ALink href="/admin/produtos/novo" variant="primary">Novo produto</ALink>} />
+          ) : view === "lista" ? (
+            <Table>
+              <thead>
+                <tr>
+                  <Th className="w-10">
+                    <Checkbox checked={allSel} indeterminate={sel.length > 0 && !allSel} onChange={() => setSel(allSel ? [] : list.map((p) => p.id))} />
+                  </Th>
+                  <Th>Produto</Th>
+                  <Th>Estado</Th>
+                  <Th className="text-right">Preço</Th>
+                  <Th className="text-right">Margem</Th>
+                  <Th className="text-center">Estoque</Th>
+                  <Th>À venda</Th>
+                  <Th className="w-10" />
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((p) => (
+                  <tr key={p.id} onClick={() => router.push(`/admin/produtos/${p.id}`)} className={cn("group cursor-pointer hover:bg-[#fafafa]", sel.includes(p.id) && "bg-[#f2f7fe]")}>
+                    <Td>
+                      <Checkbox checked={sel.includes(p.id)} onChange={() => toggle(p.id)} />
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f5f5f7] p-1.5">
                           <ProductMedia p={p} />
                         </span>
-                        <span>
-                          <span className="block font-medium">
-                            {p.name} {p.featured && <span className="label ml-1 text-[9px] text-steel">Destaque</span>}
-                          </span>
-                          <span className="text-muted">
-                            {p.storage} · {p.color}
-                          </span>
-                        </span>
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-graphite">
-                      {CONDITION_LABEL[p.condition]}
-                      {p.battery && p.condition !== "novo" ? <span className="text-muted"> · {p.battery}%</span> : null}
-                    </td>
-                    <td className="px-4 py-3 font-medium tabular">{money(p.price)}</td>
-                    <td className="px-4 py-3 tabular text-muted">{margin === null ? "—" : `${margin.toFixed(0)}%`}</td>
-                    <td className="px-4 py-3">
-                      <span className={`tabular ${p.stock === 0 ? "text-bad" : p.stock === 1 ? "text-warn" : ""}`}>{p.stock}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Toggle checked={p.active} onChange={(v) => saveProduct({ ...p, active: v })} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button onClick={() => setEditing(p)} className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line hover:border-ink/40" aria-label="Editar">
-                        <Edit size={14} />
-                      </button>
-                    </td>
+                        <div className="min-w-0">
+                          <p className="flex items-center gap-1.5 font-medium">
+                            <span className="truncate">
+                              {p.name} {p.storage}
+                            </span>
+                            {p.featured ? <Star size={13} className="shrink-0 fill-[#f5b301] text-[#f5b301]" /> : null}
+                          </p>
+                          <p className="flex items-center gap-1.5 text-[12px] text-muted">
+                            <span className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10" style={{ background: p.colorHex }} />
+                            {p.color} · {CATEGORY_LABEL[p.category]}
+                            {p.sku ? <span className="font-mono text-faint">· {p.sku}</span> : null}
+                          </p>
+                        </div>
+                      </div>
+                    </Td>
+                    <Td>
+                      <Badge tone={p.condition === "novo" ? "blue" : p.condition === "vitrine" ? "orange" : "gray"}>
+                        {p.condition === "novo" ? "Lacrado" : CONDITION_LABEL[p.condition]}
+                        {p.battery && p.condition !== "novo" ? ` · ${p.battery}%` : ""}
+                      </Badge>
+                    </Td>
+                    <Td className="text-right">
+                      <p className="font-semibold tabular">{money(p.price)}</p>
+                      {p.priceFrom ? <p className="text-[12px] text-faint line-through tabular">{money(p.priceFrom)}</p> : null}
+                    </Td>
+                    <Td className="text-right tabular text-muted">{p.cost ? `${Math.round(((p.price - p.cost) / p.price) * 100)}%` : "—"}</Td>
+                    <Td className="text-center">
+                      <StockPill n={p.stock} />
+                    </Td>
+                    <Td>
+                      <span onClick={(e) => e.stopPropagation()}>
+                        <Switch checked={p.active} onChange={(v) => saveProduct({ ...p, active: v })} />
+                      </span>
+                    </Td>
+                    <Td>
+                      <RowMenu p={p} />
+                    </Td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {list.length === 0 && <p className="p-10 text-center text-muted">Nenhum produto encontrado.</p>}
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-3 md:p-4 xl:grid-cols-5">
+              {list.map((p) => (
+                <Link key={p.id} href={`/admin/produtos/${p.id}`} className={cn("group relative rounded-2xl bg-[#f5f5f7] p-3 transition-shadow hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)]", !p.active && "opacity-55")}>
+                  <span className="relative block aspect-square overflow-hidden rounded-xl bg-white p-4">
+                    <ProductMedia p={p} />
+                    {p.featured ? <Star size={15} className="absolute right-2 top-2 fill-[#f5b301] text-[#f5b301]" /> : null}
+                  </span>
+                  <p className="mt-2.5 truncate text-[13.5px] font-medium">
+                    {p.name} {p.storage}
+                  </p>
+                  <p className="text-[12px] text-muted">{p.color}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-[13.5px] font-semibold tabular">{money(p.price)}</span>
+                    <StockPill n={p.stock} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </PageBody>
+
+      {/* Ações em lote */}
+      <div className={cn("fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 transition-[transform,opacity] duration-300 lg:pl-[256px]", sel.length ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0")}>
+        <div className="flex flex-wrap items-center gap-2 rounded-full bg-[#1d1d1f] p-1.5 pl-5 text-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)]">
+          <span className="mr-2 text-[13.5px] font-medium tabular">{sel.length} selecionado(s)</span>
+          {[
+            [<Eye key="a" size={14} />, "Pôr à venda", () => patchProducts(sel, { active: true })],
+            [<EyeOff key="b" size={14} />, "Ocultar", () => patchProducts(sel, { active: false })],
+            [<Star key="c" size={14} />, "Destacar", () => patchProducts(sel, { featured: true })],
+          ].map(([icon, label, fn]) => (
+            <button key={label as string} onClick={() => ((fn as () => void)(), setSel([]))} className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3.5 text-[13px] hover:bg-white/20">
+              {icon as React.ReactNode} {label as string}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              if (confirm(`Excluir ${sel.length} produto(s)? Não dá pra desfazer.`)) {
+                deleteProducts(sel);
+                setSel([]);
+              }
+            }}
+            className="flex h-9 items-center gap-1.5 rounded-full bg-[#ff3b30]/90 px-3.5 text-[13px] hover:bg-[#ff3b30]"
+          >
+            <Trash2 size={14} /> Excluir
+          </button>
+          <button onClick={() => setSel([])} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/10" aria-label="Limpar seleção">
+            <X size={16} />
+          </button>
         </div>
       </div>
-
-      <Drawer open={!!editing} onClose={() => setEditing(null)} title={editing && db.products.some((p) => p.id === editing.id) ? "Editar produto" : "Novo produto"}>
-        {editing && <ProductForm key={editing.id} initial={editing} onDone={() => setEditing(null)} />}
-      </Drawer>
     </>
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function StockPill({ n }: { n: number }) {
   return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative h-6 w-10 rounded-full transition-colors ${checked ? "bg-ink" : "bg-line"}`}
+    <span
+      className={cn(
+        "inline-flex min-w-[34px] justify-center rounded-full px-2 py-0.5 text-[12.5px] font-semibold tabular",
+        n === 0 ? "bg-[#fdecec] text-[#c40014]" : n === 1 ? "bg-[#fff2e5] text-[#b25e09]" : "bg-[#e8f6ec] text-[#1f7a39]",
+      )}
     >
-      <span className={`absolute top-1 h-4 w-4 rounded-full bg-card transition-[left] ${checked ? "left-5" : "left-1"}`} />
-    </button>
+      {n}
+    </span>
   );
 }
 
-function ProductForm({ initial, onDone }: { initial: Product; onDone: () => void }) {
-  const db = useDB();
-  const [p, setP] = useState<Product>(initial);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-  const exists = db?.products.some((x) => x.id === p.id);
-  const set = <K extends keyof Product>(k: K, v: Product[K]) => setP((s) => ({ ...s, [k]: v }));
-
-  const onFiles = async (files: FileList | null) => {
-    if (!files) return;
-    setBusy(true);
-    const imgs = await Promise.all(Array.from(files).slice(0, 5 - p.images.length).map((f) => compressImage(f, 1100, 0.8)));
-    setP((s) => ({ ...s, images: [...s.images, ...imgs] }));
-    setBusy(false);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  const save = () => {
-    if (!p.name.trim() || !p.price) {
-      setErr("Preencha pelo menos o nome e o preço.");
-      return;
-    }
-    const slugBase = slugify(`${p.name}-${p.storage}-${p.color}`);
-    const taken = db?.products.some((x) => x.slug === slugBase && x.id !== p.id);
-    saveProduct({ ...p, slug: taken ? `${slugBase}-${p.id.slice(0, 4)}` : slugBase });
-    onDone();
-  };
-
+function RowMenu({ p }: { p: Product }) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("mousedown", k);
+    return () => window.removeEventListener("mousedown", k);
+  }, [open]);
   return (
-    <div className="space-y-8 p-6">
-      <div>
-        <p className="text-[13px] font-medium text-graphite">Fotos</p>
-        <div className="mt-3 grid grid-cols-5 gap-2">
-          {p.images.map((img, i) => (
-            <div key={i} className="relative aspect-square overflow-hidden rounded-[4px] bg-paper-2">
-              <img src={img} alt="" className="h-full w-full object-cover" />
-              <button
-                onClick={() => set("images", p.images.filter((_, k) => k !== i))}
-                className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-ink/80 text-paper"
-                aria-label="Remover"
-              >
-                <Close size={12} />
-              </button>
-              {i === 0 && <span className="label absolute bottom-1 left-1 rounded-full bg-card px-1.5 text-[8px]">Capa</span>}
-            </div>
-          ))}
-          {p.images.length < 5 && (
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[4px] border border-dashed border-ink/30 text-muted hover:text-ink"
-            >
-              <Camera size={18} />
-              <span className="text-[10px]">{busy ? "…" : "Adicionar"}</span>
-            </button>
-          )}
-        </div>
-        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
-        <p className="mt-2 text-[12px] text-faint">Sem foto, o site mostra uma ilustração na cor do aparelho.</p>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Nome" className="sm:col-span-2">
-          <Input value={p.name} onChange={(e) => set("name", e.target.value)} placeholder="iPhone 16 Pro" />
-        </Field>
-        <Field label="Categoria">
-          <Select value={p.category} onChange={(e) => set("category", e.target.value as Category)}>
-            {Object.entries(CATEGORY_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Estado">
-          <Select value={p.condition} onChange={(e) => set("condition", e.target.value as Condition)}>
-            {Object.entries(CONDITION_LABEL).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Armazenamento / versão">
-          <Input list="storage-opts" value={p.storage} onChange={(e) => set("storage", e.target.value)} />
-          <datalist id="storage-opts">
-            {STORAGE_OPTIONS.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
-        </Field>
-        <Field label="Saúde da bateria (%)" hint={p.condition === "novo" ? "não aparece em lacrado" : undefined}>
-          <Input type="number" min={0} max={100} value={p.battery ?? ""} onChange={(e) => set("battery", e.target.value ? Number(e.target.value) : undefined)} />
-        </Field>
-        <Field label="Cor">
-          <Input value={p.color} onChange={(e) => set("color", e.target.value)} placeholder="Titânio natural" />
-        </Field>
-        <Field label="Tom da cor" hint="pra ilustração">
-          <span className="flex h-12 items-center gap-3 rounded-[6px] border border-line bg-card px-3">
-            <input type="color" value={p.colorHex} onChange={(e) => set("colorHex", e.target.value)} className="h-7 w-10 cursor-pointer border-0 bg-transparent" />
-            <span className="font-mono text-[13px] text-muted">{p.colorHex}</span>
-          </span>
-        </Field>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Preço à vista (R$)">
-          <Input type="number" value={p.price || ""} onChange={(e) => set("price", Number(e.target.value))} />
-        </Field>
-        <Field label="Preço “de” (opcional)">
-          <Input type="number" value={p.priceFrom ?? ""} onChange={(e) => set("priceFrom", e.target.value ? Number(e.target.value) : undefined)} />
-        </Field>
-        <Field label="Custo (R$)" hint="só aparece aqui">
-          <Input type="number" value={p.cost ?? ""} onChange={(e) => set("cost", e.target.value ? Number(e.target.value) : undefined)} />
-        </Field>
-        <Field label="Estoque">
-          <Input type="number" min={0} value={p.stock} onChange={(e) => set("stock", Number(e.target.value))} />
-        </Field>
-        <Field label="Garantia (meses)">
-          <Input type="number" min={0} value={p.warrantyMonths} onChange={(e) => set("warrantyMonths", Number(e.target.value))} />
-        </Field>
-        <div className="flex flex-col justify-end gap-3 pb-1">
-          <label className="flex items-center gap-2 text-[14px]">
-            <input type="checkbox" checked={p.featured} onChange={(e) => set("featured", e.target.checked)} className="accent-ink" /> Destaque na página inicial
-          </label>
-          <label className="flex items-center gap-2 text-[14px]">
-            <input type="checkbox" checked={p.active} onChange={(e) => set("active", e.target.checked)} className="accent-ink" /> Visível no site
-          </label>
-        </div>
-      </div>
-
-      <Field label="Observações" hint="aparece na página do produto">
-        <Textarea value={p.notes ?? ""} onChange={(e) => set("notes", e.target.value)} placeholder="Ex.: acompanha caixa e cabo. Pequena marca na lateral." />
-      </Field>
-
-      {err && <p className="text-[13px] text-bad">{err}</p>}
-
-      <div className="flex items-center justify-between border-t border-line pt-6">
-        {exists ? (
-          <Btn
-            variant="danger"
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button onClick={() => setOpen((v) => !v)} className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-black/5 hover:text-ink" aria-label="Ações">
+        <MoreHorizontal size={17} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-9 z-30 w-[200px] rounded-2xl bg-white p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3),0_0_0_1px_rgba(0,0,0,0.06)]">
+          <MenuItem icon={<Pencil size={15} />} label="Editar" onClick={() => router.push(`/admin/produtos/${p.id}`)} />
+          <MenuItem
+            icon={<Copy size={15} />}
+            label="Duplicar"
             onClick={() => {
-              if (confirm(`Excluir ${p.name}?`)) {
-                deleteProduct(p.id);
-                onDone();
-              }
+              const c = duplicateProduct(p.id);
+              if (c) router.push(`/admin/produtos/${c.id}`);
             }}
-          >
-            Excluir
-          </Btn>
-        ) : (
-          <span />
-        )}
-        <div className="flex gap-2">
-          <Btn variant="ghost" onClick={onDone}>
-            Cancelar
-          </Btn>
-          <Btn onClick={save}>Salvar</Btn>
+          />
+          <MenuItem icon={<Star size={15} />} label={p.featured ? "Tirar do destaque" : "Destacar"} onClick={() => (saveProduct({ ...p, featured: !p.featured }), setOpen(false))} />
+          <MenuItem icon={<Eye size={15} />} label="Ver na loja" onClick={() => window.open(`/loja/${p.slug}`, "_blank")} />
+          <div className="my-1 h-px bg-black/[0.06]" />
+          <MenuItem icon={<Trash2 size={15} />} label="Excluir" danger onClick={() => confirm(`Excluir ${p.name}?`) && deleteProduct(p.id)} />
         </div>
-      </div>
+      )}
     </div>
+  );
+}
+
+function MenuItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button onClick={onClick} className={cn("flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px]", danger ? "text-[#d70015] hover:bg-[#fff5f5]" : "hover:bg-[#f5f5f7]")}>
+      <span className={danger ? "" : "text-muted"}>{icon}</span>
+      {label}
+    </button>
   );
 }
