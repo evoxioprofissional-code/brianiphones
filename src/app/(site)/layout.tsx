@@ -3,11 +3,13 @@ import { Footer } from "@/components/site/Footer";
 import { VisitTracker } from "@/components/site/VisitTracker";
 import { CartDrawer } from "@/components/site/CartDrawer";
 import { AnnouncementBar, StorefrontTheme } from "@/components/site/StorefrontTheme";
+import { ScrollGlow } from "@/components/site/ScrollGlow";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <StorefrontTheme />
+      <ScrollGlow />
       <AnnouncementBar />
       <Header />
       <main>{children}</main>

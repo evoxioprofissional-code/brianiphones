@@ -11,6 +11,7 @@ import { DeviceArt } from "./DeviceArt";
 import { Reveal } from "./Reveal";
 import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Pin, Shield, Store, Swap, Truck } from "@/components/ui/Icons";
 import { useSettings } from "./useSettings";
+import { waLink } from "@/lib/whatsapp";
 import { TiltCard } from "@/components/ui/tilt-card";
 
 /* Frase padrão quando o slide não tem frase */
@@ -29,16 +30,34 @@ const tagline = (p: Product) =>
 
 type ResolvedSlide = { slide: HeroSlide; product?: Product };
 
+const FALLBACK_SLIDE: HeroSlide = {
+  id: "padrao",
+  active: true,
+  eyebrow: "Brian iPhones",
+  title: "iPhone bom é iPhone com nome.",
+  subtitle: "Novos e seminovos revisados, com garantia da loja em Itatiba.",
+  ctaLabel: "Ver aparelhos",
+  ctaHref: "/loja",
+  glow: "#c8662f",
+  eyebrowColor: "#bf4800",
+};
+
 export function HeroBanner() {
   const db = useDB();
   const slides = useMemo<ResolvedSlide[]>(() => {
     if (!db) return [];
-    return db.storefront.heroSlides
+    const ok = db.storefront.heroSlides
       .filter((s) => s.active)
       .map((s) => ({ slide: s, product: db.products.find((x) => x.id === s.productId) }))
       // slide de produto só aparece se o produto estiver à venda
       .filter((x) => !x.slide.productId || (x.product && x.product.active && x.product.stock > 0));
+    if (ok.length) return ok;
+    // nenhum slide disponível (produtos vendidos, banner desligado…): mostra o destaque mais recente,
+    // ou um slide padrão da loja. O banner nunca fica vazio.
+    const p = db.products.find((x) => x.active && x.stock > 0 && x.featured) ?? db.products.find((x) => x.active && x.stock > 0);
+    return [{ slide: p ? { ...FALLBACK_SLIDE, id: `auto-${p.id}`, productId: p.id, title: "", subtitle: "", glow: p.colorHex } : FALLBACK_SLIDE, product: p }];
   }, [db]);
+  const settings = useSettings();
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const n = slides.length;
@@ -96,7 +115,16 @@ export function HeroBanner() {
                 <Link href={`/loja/${p.slug}`} className="btn-outline inline-flex h-11 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-full px-4 text-[15px] font-medium sm:h-12 sm:flex-none sm:px-6 sm:text-[16px]">
                   Saiba mais <ChevronRight size={16} />
                 </Link>
-              ) : null}
+              ) : (
+                <a
+                  href={waLink(settings.whatsapp, "Olá, Brian! Vim pelo site.")}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-outline inline-flex h-11 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-full px-4 text-[15px] font-medium sm:h-12 sm:flex-none sm:px-6 sm:text-[16px]"
+                >
+                  Falar no WhatsApp <ChevronRight size={16} />
+                </a>
+              )}
             </div>
             {n > 1 && (
               <div className="mt-5 flex items-center gap-2 sm:mt-9">
@@ -116,6 +144,15 @@ export function HeroBanner() {
         )}
 
         <div className="pointer-events-none relative h-[230px] min-[400px]:h-[260px] sm:h-[320px] md:h-auto md:min-h-0">
+          {s && !p && (
+            <div key={`art-${s.id}`} className="absolute inset-0 flex items-center justify-center">
+              <div className="h-[108%] translate-y-[14%] md:h-[118%] md:translate-y-[12%]">
+                <div className="device-in h-full drop-shadow-[0_50px_60px_rgba(0,0,0,0.22)]">
+                  <DeviceArt id={`hero-${s.id}`} category="iphone" name="iPhone" color={s.glow || "#c8662f"} className="h-full w-auto" />
+                </div>
+              </div>
+            </div>
+          )}
           {p && s && (
             <div key={`art-${s.id}`} className="absolute inset-0 flex items-center justify-center">
               {p.images.length ? (

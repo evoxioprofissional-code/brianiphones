@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Database, Plus, RotateCcw, Store, Truck, X } from "lucide-react";
-import { clearAll, resetDemo, saveSettings, saveShipping, useDB } from "@/lib/store";
+import { clearAll, resetDemo, saveSettings, saveShipping, useDB, usingDatabase } from "@/lib/store";
 import { DEFAULT_SHIPPING } from "@/lib/defaults";
 import { money } from "@/lib/format";
 import type { Settings, ShippingSettings } from "@/lib/types";
@@ -210,20 +210,30 @@ function ShippingForm({ initial }: { initial: ShippingSettings }) {
 
 function DataTab() {
   return (
-    <Panel title="Dados" subtitle="Enquanto o banco de dados não está conectado, tudo fica salvo neste navegador." actions={<Database size={17} className="text-faint" />}>
+    <Panel
+      title="Dados"
+      subtitle={usingDatabase ? "Tudo fica salvo no banco de dados (Supabase) e aparece em qualquer computador ou celular." : "Modo demonstração: os dados ficam salvos só neste navegador."}
+      actions={<Database size={17} className="text-faint" />}
+    >
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl bg-[#f5f5f7] p-5">
-          <p className="text-[15px] font-semibold">Restaurar demonstração</p>
-          <p className="mt-1 text-[13px] text-muted">Volta produtos, pedidos, clientes, vitrine e números de exemplo.</p>
-          <AButton className="mt-4" onClick={() => confirm("Restaurar os dados de demonstração? O que você mudou aqui será perdido.") && resetDemo()}>
-            <RotateCcw size={15} /> Restaurar
-          </AButton>
-        </div>
+        {!usingDatabase && (
+          <div className="rounded-2xl bg-[#f5f5f7] p-5">
+            <p className="text-[15px] font-semibold">Restaurar demonstração</p>
+            <p className="mt-1 text-[13px] text-muted">Volta produtos, pedidos, clientes, vitrine e números de exemplo.</p>
+            <AButton className="mt-4" onClick={() => confirm("Restaurar os dados de demonstração? O que você mudou aqui será perdido.") && resetDemo()}>
+              <RotateCcw size={15} /> Restaurar
+            </AButton>
+          </div>
+        )}
         <div className="rounded-2xl bg-[#fff5f5] p-5">
-          <p className="text-[15px] font-semibold">Zerar números</p>
-          <p className="mt-1 text-[13px] text-muted">Apaga pedidos, contatos, vendas, despesas e visitas. Produtos voltam ao exemplo.</p>
-          <AButton variant="danger" className="mt-4" onClick={() => confirm("Zerar pedidos, contatos, vendas, despesas e visitas?") && clearAll()}>
-            Zerar
+          <p className="text-[15px] font-semibold">Zerar movimento</p>
+          <p className="mt-1 text-[13px] text-muted">Apaga pedidos, contatos, clientes, vendas, despesas e visitas. Produtos e configurações continuam.</p>
+          <AButton
+            variant="danger"
+            className="mt-4"
+            onClick={() => confirm("Apagar TODOS os pedidos, contatos, clientes, vendas, despesas e visitas? Não dá pra desfazer.") && clearAll()}
+          >
+            Zerar movimento
           </AButton>
         </div>
       </div>

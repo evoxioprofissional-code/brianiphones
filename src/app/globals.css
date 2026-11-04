@@ -403,3 +403,33 @@ body {
     animation: none;
   }
 }
+
+/* Fumaça da rolagem: as nuvens se mexem e mudam de forma o tempo todo */
+@keyframes smoke-drift {
+  0%,
+  100% {
+    border-radius: 48% 52% 60% 40% / 45% 55% 45% 55%;
+    rotate: 0deg;
+    translate: 0 0;
+  }
+  33% {
+    border-radius: 60% 40% 45% 55% / 55% 45% 60% 40%;
+    rotate: 40deg;
+    translate: -14px 10px;
+  }
+  66% {
+    border-radius: 40% 60% 55% 45% / 40% 60% 40% 60%;
+    rotate: -30deg;
+    translate: 8px -12px;
+  }
+}
+.smoke-drift {
+  animation: smoke-drift 7s ease-in-out infinite;
+}
+.smoke-drift-fast {
+  animation: smoke-drift 4.5s ease-in-out infinite reverse;
+}
+.smoke-drift-slow {
+  animation: smoke-drift 10s ease-in-out infinite;
+  animation-delay: -3s;
+}

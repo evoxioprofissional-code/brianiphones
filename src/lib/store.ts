@@ -540,14 +540,19 @@ export function saveSettings(s: Settings) {
   commit({ ...db, settings: s });
 }
 
+/** Só existe no modo demonstração (sem banco): nunca grava dados fictícios no Supabase */
 export function resetDemo() {
+  if (hasSupabase) return;
   commit(normalize(createSeed()));
 }
 
+/** Zera pedidos, contatos, clientes, vendas, despesas e visitas. Produtos e configurações ficam. */
 export function clearAll() {
-  const seed = createSeed();
-  commit(normalize({ ...seed, leads: [], orders: [], customers: {}, sales: [], expenses: [], visits: {} }));
+  const db = current();
+  commit({ ...db, leads: [], orders: [], customers: {}, sales: [], expenses: [], visits: {} });
 }
+
+export const usingDatabase = hasSupabase;
 
 /* =====================================================================
  * Visitas

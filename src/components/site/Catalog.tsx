@@ -203,7 +203,20 @@ export function Catalog() {
         </aside>
 
         <div>
-          {db && list.length === 0 ? (
+          {db && db.products.filter((p) => p.active && p.stock > 0).length === 0 ? (
+            <div className="surface rounded-[20px] px-6 py-20 text-center">
+              <p className="text-[22px] font-bold tracking-[-0.02em]">Estoque sendo atualizado</p>
+              <p className="mx-auto mt-2 max-w-[420px] text-[14px] text-muted">Os aparelhos aparecem aqui em instantes. Enquanto isso, fala com a gente no WhatsApp pra saber o que tem na loja.</p>
+              <a
+                href={waLink(settings.whatsapp, "Olá, Brian! Vim pelo site e queria saber o que tem disponível.")}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 inline-flex h-11 items-center rounded-full bg-ink px-6 text-[14px] font-medium text-paper"
+              >
+                Chamar no WhatsApp
+              </a>
+            </div>
+          ) : db && list.length === 0 ? (
             <div className="surface rounded-[20px] px-6 py-20 text-center">
               <p className="text-[22px] font-bold tracking-[-0.02em]">Nada encontrado com esses filtros</p>
               <p className="mt-2 text-[14px] text-muted">Tente tirar algum filtro, ou pergunta no WhatsApp se está procurando algo específico.</p>

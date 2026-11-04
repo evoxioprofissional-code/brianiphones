@@ -17,7 +17,7 @@ import {
   Truck,
   Users,
 } from "lucide-react";
-import { useDB } from "@/lib/store";
+import { useDB, usingDatabase } from "@/lib/store";
 import { compactMoney, dayKey, money, number, relative } from "@/lib/format";
 import { lastDays, pct } from "@/lib/metrics";
 import { hoursSince, isPaid, ordersInRange, PAY_LABEL, SHIP_LABEL } from "@/lib/admin";
@@ -289,7 +289,7 @@ export default function Dashboard() {
         </div>
 
         <p className="flex items-center gap-2 text-[12px] text-faint">
-          <Truck size={14} /> Dados de demonstração gravados neste navegador. Quando o banco de dados e o Mercado Pago forem conectados, os números passam a ser reais.
+          <Truck size={14} /> {usingDatabase ? "Números em tempo real, direto do banco de dados." : "Modo demonstração: dados gravados só neste navegador."}
         </p>
       </PageBody>
     </>
