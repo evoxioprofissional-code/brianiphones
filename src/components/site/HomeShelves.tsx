@@ -19,14 +19,14 @@ export function HomeShelves({ trade }: { trade: React.ReactNode }) {
   const rest = shelves.slice(2);
   return (
     <>
-      <div className="mx-auto max-w-[1320px] space-y-12 px-6 pt-14 md:space-y-16 md:px-8 md:pt-20">
+      <div className="mx-auto max-w-[1320px] space-y-8 px-5 pt-10 sm:space-y-12 sm:px-6 sm:pt-14 md:space-y-16 md:px-8 md:pt-20">
         {first.map(({ s, list }) => (
           <Shelf key={s.id} title={s.title} subtitle={s.subtitle} href={s.href} list={list} />
         ))}
       </div>
-      <div className="pt-10 md:pt-14">{trade}</div>
+      <div className="pt-6 sm:pt-10 md:pt-14">{trade}</div>
       {rest.length ? (
-        <div className="mx-auto max-w-[1320px] space-y-12 px-6 pt-14 md:space-y-16 md:px-8 md:pt-20">
+        <div className="mx-auto max-w-[1320px] space-y-8 px-5 pt-10 sm:space-y-12 sm:px-6 sm:pt-14 md:space-y-16 md:px-8 md:pt-20">
           {rest.map(({ s, list }) => (
             <Shelf key={s.id} title={s.title} subtitle={s.subtitle} href={s.href} list={list} />
           ))}
