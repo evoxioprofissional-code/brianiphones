@@ -53,7 +53,7 @@ export function ProductView() {
           <span className="text-ink">{p.name}</span>
         </nav>
 
-        <div className="mt-3 grid gap-3 sm:mt-5 sm:gap-6 lg:grid-cols-[1fr_420px] lg:gap-8">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:mt-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-8 [&>*]:min-w-0">
           <Gallery p={p} />
           <BuyBox p={p} whatsapp={db.settings.whatsapp} />
         </div>
@@ -177,10 +177,10 @@ function BuyBox({ p, whatsapp }: { p: Product; whatsapp: string }) {
           </button>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-1.5 sm:mt-4 sm:gap-2">
+        <div className="mt-3 grid grid-cols-1 gap-1.5 min-[360px]:grid-cols-2 sm:mt-4 sm:gap-2">
           <Link
             href={`/troca?quero=${encodeURIComponent(`${p.name} ${p.storage} ${p.color}`)}`}
-            className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-mist px-2 py-2.5 text-[12.5px] font-medium text-graphite hover:text-accent sm:text-[13px]"
+            className="flex min-w-0 items-center justify-center gap-1.5 rounded-full bg-mist px-2 py-2.5 text-center text-[12.5px] font-medium text-graphite hover:text-accent sm:text-[13px]"
           >
             <Swap size={16} /> Dar o meu na troca
           </Link>
@@ -189,7 +189,7 @@ function BuyBox({ p, whatsapp }: { p: Product; whatsapp: string }) {
             onClick={onQuote}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-mist px-2 py-2.5 text-[12.5px] font-medium text-graphite hover:text-accent sm:text-[13px]"
+            className="flex min-w-0 items-center justify-center gap-1.5 rounded-full bg-mist px-2 py-2.5 text-center text-[12.5px] font-medium text-graphite hover:text-accent sm:text-[13px]"
           >
             <WhatsApp size={16} /> Tirar dúvida
           </a>

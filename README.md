@@ -10,7 +10,7 @@ npm run dev
 ```
 
 - Site: http://localhost:3000
-- Painel: http://localhost:3000/admin (acesso de demonstração em `ACESSO-DEMO.md`)
+- Painel: http://localhost:3000/admin (login com o usuário criado no Supabase Auth)
 
 ## Páginas
 
@@ -30,15 +30,33 @@ npm run dev
 | `/admin/financeiro` | Vendas, reparos, despesas e resultado |
 | `/admin/configuracoes` | WhatsApp, endereço, horário |
 
-## Dados
+## Dados (Supabase)
 
-Ainda **sem banco de dados**: tudo fica no `localStorage` do navegador, com dados
-de demonstração. Toda leitura e escrita passa por `src/lib/store.ts`. Para conectar
-um banco (ex.: Supabase), basta trocar esse arquivo e o login em `src/lib/auth.ts`.
+O banco é o **Supabase** (projeto `brianip`). O esquema completo está em
+[`supabase/schema.sql`](supabase/schema.sql): tabelas, regras de acesso (RLS),
+funções do servidor e o bucket de fotos. Rodar de novo é seguro.
+
+- **Visitante** só lê produtos ativos e a configuração do site. Pedido, contato e
+  visita entram por funções do banco (`place_order`, `add_lead`, `track_visit`):
+  o preço é conferido no servidor e o estoque é reservado na hora.
+- **Admin** é qualquer usuário do Supabase Auth. O cadastro público está
+  **desligado**: crie o usuário em *Supabase > Authentication > Users > Add user*.
+- **Fotos** dos produtos vão para o Storage (bucket `products`).
+- Toda leitura/escrita passa por `src/lib/store.ts`. Sem as variáveis do Supabase,
+  o site volta ao modo demonstração (dados no navegador).
+
+### Variáveis de ambiente
+
+Copie `.env.example` para `.env.local` e preencha (também na hospedagem):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
 Ainda falta conectar:
 
-- **Pagamento**: Mercado Pago (Checkout Pro ou Bricks). O ponto de entrada é o `submit` em `src/components/site/Checkout.tsx`.
+- **Pagamento**: Mercado Pago (Checkout Pro ou Bricks). O ponto de entrada é o `submit` em `src/components/site/Checkout.tsx`; a confirmação do pagamento deve vir por webhook atualizando `orders.status`.
 - **Frete**: os valores em `src/lib/shipping.ts` são estimativas. Trocar `quoteShipping` pela API escolhida (Mercado Envios, Correios ou Melhor Envio).
 
 ## Stack

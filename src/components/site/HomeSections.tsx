@@ -70,36 +70,36 @@ export function HeroBanner() {
       )}
       <div className="pointer-events-none absolute -right-[18%] top-[-30%] hidden aspect-square w-[78%] rounded-full border border-white bg-white/40 shadow-[inset_0_0_80px_rgba(255,255,255,0.9)] md:block" />
 
-      <div className="relative mx-auto grid min-h-[600px] max-w-[1320px] grid-rows-[auto_1fr] px-6 md:min-h-[460px] md:grid-cols-[1.05fr_1fr] md:grid-rows-1 md:px-8 lg:min-h-[500px]">
+      <div className="relative mx-auto grid max-w-[1320px] grid-rows-[auto_auto] px-5 sm:px-6 md:min-h-[460px] md:grid-cols-[1.05fr_1fr] md:grid-rows-1 md:px-8 lg:min-h-[500px]">
         {s ? (
-          <div key={s.id} className="slide-in relative z-10 flex flex-col justify-center pt-10 md:py-16 md:pl-6 lg:pl-12">
+          <div key={s.id} className="slide-in relative z-10 flex flex-col justify-center pt-7 sm:pt-10 md:py-16 md:pl-6 lg:pl-12">
             {s.eyebrow ? (
-              <p className="text-[17px] font-semibold md:text-[19px]" style={{ color: s.eyebrowColor }}>
+              <p className="text-[15px] font-semibold sm:text-[17px] md:text-[19px]" style={{ color: s.eyebrowColor }}>
                 {s.eyebrow}
               </p>
             ) : null}
-            <h1 className="display mt-1.5 text-[40px] sm:text-[52px] lg:text-[64px]">{s.title || p?.name}</h1>
-            <p className="mt-3 max-w-[440px] text-[20px] font-medium leading-[1.25] tracking-[-0.02em] text-muted sm:text-[24px] lg:text-[28px]">
+            <h1 className="display mt-1 text-[34px] min-[400px]:text-[40px] sm:text-[52px] lg:text-[64px]">{s.title || p?.name}</h1>
+            <p className="mt-2 max-w-[440px] text-[17px] font-medium leading-[1.3] tracking-[-0.02em] text-muted sm:mt-3 sm:text-[24px] lg:text-[28px]">
               {s.subtitle || (p ? tagline(p) : "")}
             </p>
             {p ? (
-              <p className="mt-4 text-[15px] text-ink tabular">
+              <p className="mt-3 text-[14px] text-ink tabular sm:mt-4 sm:text-[15px]">
                 <span className="font-semibold">{money(p.price)}</span>
                 <span className="text-muted"> à vista ou 12x de {installment(p.price)}</span>
               </p>
             ) : null}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href={href} className="btn-ink inline-flex h-12 items-center rounded-full px-7 text-[16px] font-medium">
+            <div className="mt-5 flex gap-2.5 sm:mt-6 sm:flex-wrap sm:gap-3">
+              <Link href={href} className="btn-ink inline-flex h-11 flex-1 items-center justify-center whitespace-nowrap rounded-full px-5 text-[15px] font-medium sm:h-12 sm:flex-none sm:px-7 sm:text-[16px]">
                 {s.ctaLabel || "Comprar agora"}
               </Link>
               {p ? (
-                <Link href={`/loja/${p.slug}`} className="btn-outline inline-flex h-12 items-center gap-1 rounded-full px-6 text-[16px] font-medium">
+                <Link href={`/loja/${p.slug}`} className="btn-outline inline-flex h-11 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-full px-4 text-[15px] font-medium sm:h-12 sm:flex-none sm:px-6 sm:text-[16px]">
                   Saiba mais <ChevronRight size={16} />
                 </Link>
               ) : null}
             </div>
             {n > 1 && (
-              <div className="mt-9 flex items-center gap-2">
+              <div className="mt-5 flex items-center gap-2 sm:mt-9">
                 {slides.map((x, k) => (
                   <button
                     key={x.slide.id}
@@ -115,7 +115,7 @@ export function HeroBanner() {
           <div />
         )}
 
-        <div className="pointer-events-none relative min-h-[300px] md:min-h-0">
+        <div className="pointer-events-none relative h-[230px] min-[400px]:h-[260px] sm:h-[320px] md:h-auto md:min-h-0">
           {p && s && (
             <div key={`art-${s.id}`} className="absolute inset-0 flex items-center justify-center">
               {p.images.length ? (
@@ -224,16 +224,16 @@ export function Shelf({ title, subtitle, href, list, loading }: { title: string;
 
   return (
     <Reveal as="section">
-      <div className="flex items-end justify-between gap-4">
-        <h2 className="text-[24px] font-semibold leading-[1.15] tracking-[-0.025em] md:text-[32px]">
+      <div className="flex items-end justify-between gap-3">
+        <h2 className="min-w-0 text-[22px] font-semibold leading-[1.15] tracking-[-0.025em] sm:text-[24px] md:text-[32px]">
           {title}
           {subtitle ? <span className="text-faint"> {subtitle}</span> : null}
         </h2>
-        <Link href={href} className="hidden shrink-0 items-center gap-0.5 pb-1 text-[15px] text-accent hover:underline sm:flex">
+        <Link href={href} className="relative z-10 -mr-2 flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-2 text-[15px] text-accent hover:underline">
           Ver tudo <ChevronRight size={15} />
         </Link>
       </div>
-      <div ref={ref} className="no-scrollbar -mx-6 mt-2 flex snap-x scroll-px-6 gap-4 overflow-x-auto px-6 pb-14 pt-5 md:-mx-8 md:scroll-px-8 md:px-8 md:gap-5">
+      <div ref={ref} className="no-scrollbar -mx-5 mt-1 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 pb-8 pt-4 sm:-mx-6 sm:scroll-px-6 sm:gap-4 sm:px-6 md:-mx-8 md:scroll-px-8 md:px-8 md:gap-5">
         {!loading
           ? list.map((p) => <ProductCard key={p.id} p={p} className={SHELF_ITEM} />)
           : Array.from({ length: 5 }).map((_, k) => (
@@ -242,11 +242,8 @@ export function Shelf({ title, subtitle, href, list, loading }: { title: string;
               </div>
             ))}
       </div>
-      <div className="-mt-9 flex items-center justify-between">
-        <Link href={href} className="flex items-center gap-0.5 text-[15px] text-accent hover:underline sm:hidden">
-          Ver tudo <ChevronRight size={15} />
-        </Link>
-        <div className="ml-auto hidden gap-3 md:flex">
+      <div className="-mt-2 hidden justify-end md:flex">
+        <div className="flex gap-3">
           <button onClick={() => scroll(-1)} className="grid h-9 w-9 place-items-center rounded-full bg-mist text-ink/70 transition-colors hover:bg-[#e8e8ed]" aria-label="Voltar">
             <ChevronLeft size={17} />
           </button>

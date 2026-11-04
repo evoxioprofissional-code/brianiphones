@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useDB } from "@/lib/store";
+import { useEffect, useState } from "react";
+import { fetchOrder, useDB } from "@/lib/store";
+import type { Order } from "@/lib/types";
 import { dateTime, money, moneyCents } from "@/lib/format";
 import { waLink } from "@/lib/whatsapp";
 import { ORDER_STATUS_LABEL, PAYMENT_LABEL } from "@/lib/site";
@@ -12,8 +14,18 @@ import { TiltCard } from "@/components/ui/be-ui-tilt-card";
 export function OrderView() {
   const { id } = useParams<{ id: string }>();
   const db = useDB();
-  if (!db) return <div className="h-[70vh]" />;
-  const o = db.orders.find((x) => x.id === id);
+  const [o, setO] = useState<Order | null | undefined>(undefined);
+  const local = db?.orders.find((x) => x.id === id);
+  useEffect(() => {
+    let alive = true;
+    fetchOrder(id)
+      .then((r) => alive && setO(r))
+      .catch(() => alive && setO(null));
+    return () => {
+      alive = false;
+    };
+  }, [id, local]);
+  if (!db || o === undefined) return <div className="h-[70vh]" />;
 
   if (!o) {
     return (

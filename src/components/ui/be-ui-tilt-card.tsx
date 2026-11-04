@@ -87,28 +87,36 @@ export function TiltCard({ children, max = 12, glare = true, glareColor = "var(-
   const reduce = useReducedMotion();
   const canHover = useHoverCapable();
   const enabled = !reduce && canHover;
+  /** celular / tablet: o efeito vem do toque e da rolagem */
+  const touchMode = !reduce && !canHover;
+  const touching = useRef(false);
+  const [active, setActive] = useState(false);
 
   const rx = useMotionValue(0);
   const ry = useMotionValue(0);
   const gx = useMotionValue(50);
   const gy = useMotionValue(50);
+  const sc = useMotionValue(1);
 
   const srx = useSpring(rx, SPRING_MOUSE);
   const sry = useSpring(ry, SPRING_MOUSE);
+  const ssc = useSpring(sc, SPRING_MOUSE);
 
-  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const aim = (clientX: number, clientY: number) => {
     const el = ref.current;
-
-    if (!el || !enabled) return;
-
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width;
-    const py = (e.clientY - rect.top) / rect.height;
-
+    const px = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const py = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
     ry.set((px - 0.5) * max);
     rx.set((0.5 - py) * max);
     gx.set(px * 100);
     gy.set(py * 100);
+  };
+
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!enabled) return;
+    aim(e.clientX, e.clientY);
   };
 
   const onLeave = () => {
@@ -116,7 +124,63 @@ export function TiltCard({ children, max = 12, glare = true, glareColor = "var(-
     ry.set(0);
   };
 
-  const transform = useMotionTemplate`perspective(1000px) rotateX(${srx}deg) rotateY(${sry}deg)`;
+  /* ---- toque: inclina pro lado do dedo, cresce um pouco e acende ---- */
+  const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchMode) return;
+    touching.current = true;
+    setActive(true);
+    sc.set(1.025);
+    const t = e.touches[0];
+    aim(t.clientX, t.clientY);
+  };
+  const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!touchMode || !touching.current) return;
+    const t = e.touches[0];
+    aim(t.clientX, t.clientY);
+  };
+  const onTouchEnd = () => {
+    if (!touchMode) return;
+    touching.current = false;
+    setActive(false);
+    sc.set(1);
+    rx.set(0);
+    ry.set(0);
+  };
+
+  /* ---- rolagem: inclinação suave conforme o card atravessa a tela ---- */
+  useEffect(() => {
+    const el = ref.current;
+    if (!touchMode || !el) return;
+    let raf = 0;
+    let visible = false;
+    const update = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!visible || touching.current) return;
+        const r = el.getBoundingClientRect();
+        const vh = window.innerHeight || 1;
+        const p = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / (vh / 2)));
+        rx.set(p * max * 0.45);
+        ry.set(0);
+      });
+    };
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry.isIntersecting;
+        if (visible) update();
+      },
+      { rootMargin: "80px" },
+    );
+    io.observe(el);
+    window.addEventListener("scroll", update, { passive: true });
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", update);
+      cancelAnimationFrame(raf);
+    };
+  }, [touchMode, max, rx, ry]);
+
+  const transform = useMotionTemplate`perspective(1000px) rotateX(${srx}deg) rotateY(${sry}deg) scale(${ssc})`;
   const glareBg = useMotionTemplate`radial-gradient(circle at ${gx}% ${gy}%, ${glareColor}, transparent 50%)`;
 
   return (
@@ -124,13 +188,26 @@ export function TiltCard({ children, max = 12, glare = true, glareColor = "var(-
       ref={ref}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      style={{ transform, transformStyle: "preserve-3d" }}
-      className={cn("relative overflow-hidden rounded-2xl will-change-transform", lift && "transition-shadow duration-500 ease-out hover:lift", className)}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+      data-active={active || undefined}
+      style={{ transform, backfaceVisibility: "hidden" }}
+      className={cn(
+        "relative isolate overflow-hidden rounded-2xl [-webkit-tap-highlight-color:transparent] will-change-transform",
+        lift && "transition-shadow duration-500 ease-out hover:lift data-[active]:lift",
+        className,
+      )}
     >
       {children}
 
-      {glare && enabled ? (
-        <motion.div aria-hidden style={{ background: glareBg, opacity: glareOpacity }} className="pointer-events-none absolute inset-0" />
+      {glare && (enabled || active) ? (
+        <motion.div
+          aria-hidden
+          style={{ background: glareBg, opacity: enabled ? glareOpacity : glareOpacity * 1.6 }}
+          className="pointer-events-none absolute inset-0"
+        />
       ) : null}
     </motion.div>
   );
