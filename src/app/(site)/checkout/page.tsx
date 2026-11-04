@@ -5,9 +5,11 @@ export const metadata: Metadata = { title: "Finalizar compra", robots: { index: 
 
 export default function CheckoutPage() {
   return (
-    <section className="mx-auto max-w-[1320px] px-4 pb-16 pt-4 sm:px-5 md:px-8 md:pb-24 md:pt-8">
-      <h1 className="mb-4 text-[26px] sm:mb-6 sm:text-[30px] font-bold tracking-[-0.03em] md:text-[36px]">Finalizar compra</h1>
-      <Checkout />
-    </section>
+    <div className="bg-[#f5f5f7]">
+      <section className="mx-auto max-w-[1200px] px-4 pb-16 pt-6 sm:px-5 md:px-8 md:pb-24 md:pt-10">
+        <h1 className="mb-5 text-[28px] font-semibold tracking-[-0.035em] sm:mb-7 sm:text-[34px] md:text-[40px]">Finalizar compra</h1>
+        <Checkout />
+      </section>
+    </div>
   );
 }
