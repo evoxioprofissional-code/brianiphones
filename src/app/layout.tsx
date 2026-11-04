@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Brian iPhones — iPhone, MacBook e Apple Watch em Itatiba",
+    default: "Brian iPhones",
     template: "%s · Brian iPhones",
   },
   description:
