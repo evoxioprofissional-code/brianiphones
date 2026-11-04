@@ -12,6 +12,7 @@ import { Reveal } from "./Reveal";
 import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Pin, Shield, Store, Swap, Truck } from "@/components/ui/Icons";
 import { useSettings } from "./useSettings";
 import { waLink } from "@/lib/whatsapp";
+import { BadgeCheck, BatteryFull, ShieldCheck, Store as StoreFront } from "lucide-react";
 import { TiltCard } from "@/components/ui/tilt-card";
 
 /* Frase padrão quando o slide não tem frase */
@@ -454,18 +455,54 @@ export function TradeBanner() {
 
 export function TrustGrid() {
   const items = [
-    ["Bateria medida", "A saúde da bateria está no anúncio. Abaixo de 80%, a gente troca antes de vender."],
-    ["Procedência", "IMEI consultado e iCloud desvinculado. Sem bloqueio, sem surpresa."],
-    ["Tudo testado", "Face ID, câmeras, tela, som e carregamento conferidos na revisão."],
-    ["Loja de verdade", "Seis anos em Itatiba e mais de 6 mil clientes. Dá pra passar e conhecer."],
+    {
+      icon: BatteryFull,
+      tone: "#1f8a3e",
+      chip: "Mínimo 80%",
+      t: "Bateria medida",
+      d: "A saúde da bateria está no anúncio. Abaixo de 80%, a gente troca antes de vender.",
+    },
+    {
+      icon: ShieldCheck,
+      tone: "#0071e3",
+      chip: "IMEI e iCloud",
+      t: "Procedência",
+      d: "IMEI consultado e iCloud desvinculado. Sem bloqueio, sem surpresa.",
+    },
+    {
+      icon: BadgeCheck,
+      tone: "#8e44ad",
+      chip: "Revisão completa",
+      t: "Tudo testado",
+      d: "Face ID, câmeras, tela, som e carregamento conferidos na revisão.",
+    },
+    {
+      icon: StoreFront,
+      tone: "#bf4800",
+      chip: "Desde 2020",
+      t: "Loja de verdade",
+      d: "Seis anos em Itatiba e mais de 6 mil clientes. Dá pra passar e conhecer.",
+    },
   ];
   return (
-    <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:gap-4 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4">
-      {items.map(([t, d], k) => (
-        <TiltCard key={t} max={12} glareOpacity={0.1} className="w-[68%] shrink-0 snap-start rounded-[18px] bg-mist p-5 sm:w-auto sm:p-7">
-          <span className="text-[13px] font-semibold text-accent tabular">0{k + 1}</span>
-          <p className="mt-2 text-[17px] font-semibold tracking-[-0.02em] sm:mt-3 sm:text-[21px]">{t}</p>
-          <p className="mt-1.5 text-[13.5px] leading-[1.5] text-muted sm:mt-2 sm:text-[15px]">{d}</p>
+    <div className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-3 pt-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:px-0 lg:grid-cols-4">
+      {items.map(({ icon: Icon, tone, chip, t, d }) => (
+        <TiltCard
+          key={t}
+          max={8}
+          glare={false}
+          className="flex w-[74%] shrink-0 snap-start flex-col rounded-[22px] bg-white p-5 ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_14px_34px_-20px_rgba(0,0,0,0.22)] sm:w-auto sm:p-6"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-[14px]" style={{ background: `${tone}14`, color: tone }}>
+              <Icon size={22} strokeWidth={1.8} />
+            </span>
+            <span className="rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ background: `${tone}0f`, color: tone }}>
+              {chip}
+            </span>
+          </div>
+          <p className="mt-5 text-[18px] font-semibold tracking-[-0.022em] sm:mt-6 sm:text-[20px]">{t}</p>
+          <p className="mt-1.5 text-[13.5px] leading-[1.5] text-muted sm:text-[14.5px]">{d}</p>
         </TiltCard>
       ))}
     </div>
