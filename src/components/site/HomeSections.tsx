@@ -9,10 +9,10 @@ import { ProductCard, ProductCardSkeleton } from "./ProductCard";
 import { ProductMedia } from "./ProductMedia";
 import { DeviceArt } from "./DeviceArt";
 import { Reveal } from "./Reveal";
-import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Pin, Shield, Store, Swap, Truck } from "@/components/ui/Icons";
+import { ArrowRight, Bag, CardIcon, ChevronLeft, ChevronRight, Instagram, Pin, Shield, Store, Swap, Truck, WhatsApp } from "@/components/ui/Icons";
 import { useSettings } from "./useSettings";
 import { waLink } from "@/lib/whatsapp";
-import { BadgeCheck, BatteryFull, ShieldCheck, Store as StoreFront } from "lucide-react";
+import { BadgeCheck, BatteryFull, Clock, ShieldCheck, Store as StoreFront } from "lucide-react";
 import { TiltCard } from "@/components/ui/tilt-card";
 
 /* Frase padrão quando o slide não tem frase */
@@ -513,45 +513,78 @@ export function TrustGrid() {
 
 export function StoreBlock() {
   const s = useSettings();
+  const info = [
+    { icon: <Pin size={17} />, k: "Endereço", v: [s.address, s.city].filter(Boolean).join(" · ") },
+    { icon: <Clock size={17} strokeWidth={1.8} />, k: "Horário", v: s.hours },
+    { icon: <Instagram size={17} />, k: "Instagram", v: `@${s.instagram}`, href: `https://instagram.com/${s.instagram}` },
+  ];
   return (
     <section id="loja-fisica" className="scroll-mt-24">
-      <div className="mx-auto grid max-w-[1320px] gap-3 px-4 sm:gap-4 sm:px-6 md:grid-cols-[1.1fr_1fr] md:px-8">
-        <TiltCard max={6} glareColor="#ffffff" glareOpacity={0.12} className="flex min-h-[220px] flex-col justify-between rounded-[24px] bg-black p-6 text-white sm:min-h-[300px] sm:rounded-[28px] sm:p-8 md:min-h-[440px] md:p-12">
-          {/* Troque por uma foto real da fachada/balcão */}
-          <div className="pointer-events-none absolute -right-24 -top-24 h-[380px] w-[380px] rounded-full bg-[#2997ff]/20 blur-[90px]" />
-          <Pin size={26} className="relative text-[#a1a1a6]" />
-          <div className="relative">
-            <p className="text-[17px] font-semibold text-[#2997ff]">Loja física · desde 2020</p>
-            <p className="display mt-1 text-[44px] sm:mt-2 sm:text-[56px] md:text-[88px]">Itatiba.</p>
-            <p className="mt-2 text-[17px] text-[#a1a1a6]">Seis anos atendendo olho no olho.</p>
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6 md:px-8">
+        <div className="grid overflow-hidden rounded-[24px] bg-white ring-1 ring-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_44px_-24px_rgba(0,0,0,0.25)] md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)]">
+          {/* lado escuro: "mapa" com o pino da loja */}
+          <div className="relative isolate flex min-h-[150px] flex-col justify-end overflow-hidden bg-[#0b0b0d] p-5 text-white sm:min-h-[180px] sm:p-7">
+            <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+              <div
+                className="absolute inset-0 opacity-[0.16]"
+                style={{
+                  backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+                  backgroundSize: "28px 28px",
+                  maskImage: "radial-gradient(circle at 72% 38%, black, transparent 70%)",
+                }}
+              />
+              <div className="absolute right-[18%] top-[30%] h-40 w-40 -translate-y-1/2 translate-x-1/2 rounded-full bg-[#2997ff]/25 blur-[40px]" />
+              <span className="absolute right-[18%] top-[30%] block h-24 w-24 -translate-y-1/2 translate-x-1/2 rounded-full border border-white/10" />
+              <span className="absolute right-[18%] top-[30%] block h-12 w-12 -translate-y-1/2 translate-x-1/2 rounded-full border border-white/15" />
+              <span className="absolute right-[18%] top-[30%] block h-3 w-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-[#2997ff] shadow-[0_0_0_4px_rgba(41,151,255,0.25)]">
+                <span className="absolute inset-0 animate-ping rounded-full bg-[#2997ff]/70" />
+              </span>
+            </div>
+            <p className="text-[12.5px] font-medium text-[#6cb6ff]">Loja física · desde 2020</p>
+            <p className="mt-0.5 text-[34px] font-semibold leading-none tracking-[-0.04em] sm:text-[42px]">Itatiba.</p>
+            <p className="mt-2 text-[13px] text-white/55">Seis anos atendendo olho no olho.</p>
           </div>
-        </TiltCard>
-        <TiltCard max={6} glareOpacity={0.08} className="flex flex-col justify-between gap-6 rounded-[24px] bg-mist p-6 sm:gap-8 sm:rounded-[28px] sm:p-8 md:p-12">
-          <div>
-            <h2 className="text-[22px] font-semibold leading-[1.2] tracking-[-0.025em] sm:text-[28px] md:text-[34px]">
-              Passa aqui na loja. <span className="text-faint">Mais de 6 mil clientes já passaram.</span>
-            </h2>
-            <p className="mt-4 max-w-[440px] text-[16px] leading-[1.55] text-muted">
-              Compre pelo site e retire na loja, ou venha testar o aparelho antes de fechar.
-            </p>
+
+          {/* lado claro: informações */}
+          <div className="flex flex-col gap-5 p-5 sm:p-7">
+            <div>
+              <h2 className="text-[20px] font-semibold leading-tight tracking-[-0.025em] sm:text-[24px]">
+                Passa aqui na loja. <span className="text-faint">Mais de 6 mil clientes já passaram.</span>
+              </h2>
+              <p className="mt-1.5 text-[14px] leading-[1.5] text-muted">Compre pelo site e retire na loja, ou venha testar o aparelho antes de fechar.</p>
+            </div>
+            <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+              {info.map(({ icon, k, v, href }) => (
+                <li key={k} className="flex min-w-0 items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#f5f5f7] text-graphite">{icon}</span>
+                  <span className="min-w-0">
+                    <span className="block text-[11.5px] text-muted">{k}</span>
+                    {href ? (
+                      <a href={href} target="_blank" rel="noreferrer" className="block truncate text-[14px] font-medium hover:text-accent">
+                        {v}
+                      </a>
+                    ) : (
+                      <span className="block text-[14px] font-medium leading-snug">{v}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap gap-2.5">
+              <a href={s.mapsUrl} target="_blank" rel="noreferrer" className="btn-ink inline-flex h-11 items-center gap-2 rounded-full px-5 text-[14.5px] font-medium">
+                Como chegar <ArrowRight size={15} />
+              </a>
+              <a
+                href={waLink(s.whatsapp, "Olá, Brian! Quero passar na loja.")}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-outline inline-flex h-11 items-center gap-2 rounded-full px-5 text-[14.5px] font-medium"
+              >
+                <WhatsApp size={16} /> WhatsApp
+              </a>
+            </div>
           </div>
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-            {[
-              ["Endereço", s.address],
-              ["Cidade", s.city],
-              ["Horário", s.hours],
-              ["Instagram", `@${s.instagram}`],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <dt className="text-[12px] text-muted">{k}</dt>
-                <dd className="mt-0.5 text-[15px] font-medium">{v}</dd>
-              </div>
-            ))}
-          </dl>
-          <a href={s.mapsUrl} target="_blank" rel="noreferrer" className="btn-ink inline-flex h-12 w-fit items-center gap-2 rounded-full px-7 text-[16px] font-medium">
-            Como chegar <ArrowRight size={16} />
-          </a>
-        </TiltCard>
+        </div>
       </div>
     </section>
   );
