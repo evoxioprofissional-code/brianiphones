@@ -4,81 +4,88 @@ import Link from "next/link";
 import { useSettings } from "./useSettings";
 import { useDB } from "@/lib/store";
 import { waLink } from "@/lib/whatsapp";
-import { ArrowUpRight } from "@/components/ui/Icons";
+import { Logo } from "./Logo";
 
 export function Footer() {
   const s = useSettings();
   const db = useDB();
   const year = db ? new Date().getFullYear() : "";
   const phone = s.whatsapp.replace(/^55(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+
+  const cols: { title: string; links: [string, string, boolean?][] }[] = [
+    {
+      title: "Comprar",
+      links: [
+        ["iPhone", "/loja?c=iphone"],
+        ["Mac", "/loja?c=macbook"],
+        ["iPad", "/loja?c=ipad"],
+        ["Apple Watch", "/loja?c=watch"],
+        ["AirPods e acessórios", "/loja?c=acessorio"],
+        ["Seminovos", "/loja?e=seminovo"],
+      ],
+    },
+    {
+      title: "Serviços",
+      links: [
+        ["Troca na entrada", "/troca"],
+        ["Reparo", "/reparo"],
+        ["Meus pedidos", "/conta"],
+      ],
+    },
+    {
+      title: "A loja",
+      links: [
+        ["Endereço e horário", "/#loja-fisica"],
+        ["WhatsApp " + phone, waLink(s.whatsapp, "Olá, Brian! Vim pelo site."), true],
+        ["Instagram @" + s.instagram, `https://instagram.com/${s.instagram}`, true],
+      ],
+    },
+  ];
+
   return (
-    <footer className="bg-ink text-paper">
-      <div className="mx-auto max-w-[1320px] px-5 pt-20 pb-10 md:px-8">
-        <div className="grid gap-14 md:grid-cols-12">
-          <div className="md:col-span-6">
-            <p className="label text-faint">Brian iPhones · desde 2020</p>
-            <p className="display mt-6 text-[44px] md:text-[64px]">
-              Passa aqui
+    <footer className="mt-8 bg-mist text-[12.5px] text-muted">
+      <div className="mx-auto max-w-[1100px] px-6 pb-8 pt-12 md:px-8">
+        <p className="border-b border-line pb-5 leading-[1.6]">
+          Preços à vista no Pix. Parcelamento no cartão pelo Mercado Pago, sujeito às condições da operadora. Garantia da loja informada em cada
+          produto. Estoque sujeito a alteração.
+        </p>
+
+        <div className="grid gap-8 py-8 sm:grid-cols-2 md:grid-cols-4">
+          <div>
+            <Logo compact />
+            <p className="mt-4 max-w-[220px] leading-[1.6]">
+              {s.address}
               <br />
-              <span className="text-faint">na loja.</span>
+              {s.city}
+              <br />
+              {s.hours}
             </p>
-            <a
-              href={waLink(s.whatsapp, "Olá, Brian! Vim pelo site.")}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-10 inline-flex items-center gap-2 border-b border-paper/40 pb-1 text-[15px] hover:border-paper"
-            >
-              Ou chama no WhatsApp <ArrowUpRight size={16} />
-            </a>
           </div>
-
-          <div className="grid grid-cols-2 gap-10 md:col-span-6 md:grid-cols-3">
-            <div>
-              <p className="label text-faint">Loja</p>
-              <ul className="mt-5 space-y-3 text-[14px] text-paper/80">
-                <li><Link href="/loja?c=iphone" className="hover:text-paper">iPhone</Link></li>
-                <li><Link href="/loja?c=macbook" className="hover:text-paper">MacBook</Link></li>
-                <li><Link href="/loja?c=ipad" className="hover:text-paper">iPad</Link></li>
-                <li><Link href="/loja?c=watch" className="hover:text-paper">Apple Watch</Link></li>
+          {cols.map((c) => (
+            <div key={c.title}>
+              <p className="font-semibold text-ink">{c.title}</p>
+              <ul className="mt-3 space-y-2.5">
+                {c.links.map(([label, href, ext]) => (
+                  <li key={label}>
+                    {ext ? (
+                      <a href={href} target="_blank" rel="noreferrer" className="transition-colors hover:text-ink hover:underline">
+                        {label}
+                      </a>
+                    ) : (
+                      <Link href={href} className="transition-colors hover:text-ink hover:underline">
+                        {label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
               </ul>
             </div>
-            <div>
-              <p className="label text-faint">Serviços</p>
-              <ul className="mt-5 space-y-3 text-[14px] text-paper/80">
-                <li><Link href="/troca" className="hover:text-paper">Troca na entrada</Link></li>
-                <li><Link href="/reparo" className="hover:text-paper">Reparo</Link></li>
-              </ul>
-            </div>
-            <div className="col-span-2 md:col-span-1">
-              <p className="label text-faint">Contato</p>
-              <ul className="mt-5 space-y-3 text-[14px] text-paper/80">
-                <li>{phone}</li>
-                <li>
-                  <a href={`https://instagram.com/${s.instagram}`} target="_blank" rel="noreferrer" className="hover:text-paper">
-                    @{s.instagram}
-                  </a>
-                </li>
-                <li>{s.address}</li>
-                <li>{s.city}</li>
-                <li className="text-paper/55">{s.hours}</li>
-              </ul>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="mt-24 select-none overflow-hidden">
-          <p
-            className="font-sans font-extrabold leading-[0.78] text-paper/[0.07]"
-            style={{ fontVariationSettings: '"wdth" 125', fontSize: "clamp(80px, 21vw, 300px)", letterSpacing: "-0.04em" }}
-            aria-hidden
-          >
-            BRIAN
-          </p>
-        </div>
-
-        <div className="mt-6 flex flex-col justify-between gap-3 border-t border-paper/15 pt-6 text-[12px] text-paper/50 md:flex-row">
-          <p>© {year} Brian iPhones. iPhone, MacBook, iPad e Apple Watch são marcas da Apple Inc.</p>
-          <p>Revenda independente · não somos assistência autorizada Apple.</p>
+        <div className="flex flex-col justify-between gap-2 border-t border-line pt-5 md:flex-row">
+          <p>© {year} Brian iPhones. Todos os direitos reservados.</p>
+          <p>Revenda independente. iPhone, Mac, iPad, Apple Watch e AirPods são marcas da Apple Inc.</p>
         </div>
       </div>
     </footer>

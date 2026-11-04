@@ -1,4 +1,4 @@
-import type { DB, Expense, Lead, LeadStatus, Product, Sale, VisitDay } from "./types";
+import type { DB, Expense, Lead, LeadStatus, Order, OrderStatus, Product, Sale, VisitDay } from "./types";
 import { DEFAULT_SETTINGS } from "./site";
 import { dayKey, slugify } from "./format";
 
@@ -171,5 +171,36 @@ export function createSeed(): DB {
   const pastExpenses = expenses.filter((e) => new Date(e.date) <= now);
   pastExpenses.sort((a, b) => b.date.localeCompare(a.date));
 
-  return { version: 1, products, leads, sales, expenses: pastExpenses, visits, settings: DEFAULT_SETTINGS };
+  // Pedidos da loja online — 14 dias
+  const orders: Order[] = [];
+  const ostatus: OrderStatus[] = ["entregue", "entregue", "enviado", "pago", "separando", "cancelado"];
+  const ships: Order["shipping"][] = [
+    { method: "retirada", label: "Retirar na loja", price: 0, days: "Hoje" },
+    { method: "local", label: "Entrega em Itatiba", price: 15, days: "No mesmo dia" },
+    { method: "sedex", label: "SEDEX", price: 48, days: "2 a 4 dias úteis" },
+    { method: "pac", label: "PAC", price: 32, days: "5 a 9 dias úteis" },
+  ];
+  for (let i = 0; i < 18; i++) {
+    const p = products[Math.floor(r() * 12)];
+    const ago = Math.floor((i / 18) * 14);
+    const ship = ships[Math.floor(r() * ships.length)];
+    const pay = (["pix", "cartao", "cartao", "boleto"] as const)[Math.floor(r() * 4)];
+    const status: OrderStatus = i < 2 ? "aguardando_pagamento" : i < 4 ? "pago" : ostatus[Math.floor(r() * ostatus.length)];
+    const name = names[Math.floor(r() * names.length)];
+    orders.push({
+      id: `o${i}`,
+      number: String(1018 - i),
+      createdAt: daysAgo(ago, 9 + Math.floor(r() * 11)).toISOString(),
+      status,
+      customer: { name, email: "cliente@exemplo.com", phone: "11999990000", cpf: "000.000.000-00" },
+      shipping: ship,
+      payment: pay,
+      installments: pay === "cartao" ? [1, 6, 10, 12][Math.floor(r() * 4)] : 1,
+      items: [{ productId: p.id, name: p.name, detail: `${p.storage} · ${p.color}`, price: p.price, qty: 1 }],
+      subtotal: p.price,
+      total: p.price + ship.price,
+    });
+  }
+
+  return { version: 1, products, leads, orders, sales, expenses: pastExpenses, visits, settings: DEFAULT_SETTINGS };
 }

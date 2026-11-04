@@ -358,7 +358,7 @@ export function TradeInForm() {
 
       {/* Ficha */}
       <aside className="lg:col-span-5">
-        <div className="rounded-[6px] border border-line bg-card p-6 lg:sticky lg:top-28 md:p-8">
+        <div className="rounded-[6px] border border-line bg-card p-6 lg:sticky lg:top-[132px] md:p-8">
           <div className="flex items-center justify-between">
             <p className="label text-muted">Ficha de avaliação</p>
             <p className="label text-faint">Brian iPhones</p>

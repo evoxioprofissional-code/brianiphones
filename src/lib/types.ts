@@ -97,10 +97,45 @@ export type Settings = {
   mapsUrl: string;
 };
 
+/* ---------- Pedidos (loja online) ---------- */
+export type ShippingMethod = "retirada" | "local" | "pac" | "sedex";
+export type OrderPayment = "pix" | "cartao" | "boleto";
+export type OrderStatus = "aguardando_pagamento" | "pago" | "separando" | "enviado" | "entregue" | "cancelado";
+
+export type OrderItem = {
+  productId: string;
+  name: string;
+  detail: string;
+  price: number;
+  qty: number;
+};
+
+export type Order = {
+  id: string;
+  /** número curto pra falar com o cliente */
+  number: string;
+  createdAt: string;
+  status: OrderStatus;
+  customer: { name: string; email: string; phone: string; cpf: string };
+  shipping: {
+    method: ShippingMethod;
+    label: string;
+    price: number;
+    days: string;
+    address?: { cep: string; street: string; number: string; complement: string; district: string; city: string; uf: string };
+  };
+  payment: OrderPayment;
+  installments: number;
+  items: OrderItem[];
+  subtotal: number;
+  total: number;
+};
+
 export type DB = {
   version: number;
   products: Product[];
   leads: Lead[];
+  orders: Order[];
   sales: Sale[];
   expenses: Expense[];
   visits: Record<string, VisitDay>;

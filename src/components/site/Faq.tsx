@@ -6,7 +6,15 @@ import { Plus } from "@/components/ui/Icons";
 const ITEMS = [
   [
     "Como funciona a compra?",
-    "Você escolhe o aparelho no site e clica em pedir orçamento. A conversa abre no WhatsApp com tudo preenchido, a gente confirma a disponibilidade e combina pagamento e retirada ou entrega.",
+    "Você coloca o aparelho no carrinho, escolhe a entrega e paga pelo Mercado Pago, no Pix, cartão ou boleto. Assim que o pagamento é aprovado, a gente separa e envia, ou deixa pronto pra retirar na loja.",
+  ],
+  [
+    "O pagamento é seguro?",
+    "É. O pagamento é feito na tela do Mercado Pago, e a loja não vê os dados do seu cartão. Dá pra parcelar em até 12x.",
+  ],
+  [
+    "Vocês entregam para todo o Brasil?",
+    "Sim, com seguro e código de rastreio. Em Itatiba tem entrega no mesmo dia, e você também pode retirar na loja sem pagar frete. O valor e o prazo aparecem quando você digita o CEP.",
   ],
   [
     "Posso dar meu iPhone como parte do pagamento?",
@@ -14,15 +22,7 @@ const ITEMS = [
   ],
   [
     "Os seminovos têm garantia?",
-    "Sim. O prazo de cada aparelho aparece na página dele. Qualquer problema, é só trazer na loja.",
-  ],
-  [
-    "Quais as formas de pagamento?",
-    "Pix, débito, crédito parcelado e dinheiro. Dá pra combinar com o valor do aparelho de entrada.",
-  ],
-  [
-    "Vocês entregam fora de Itatiba?",
-    "Atendemos a região. Fala com a gente no WhatsApp que a gente vê a melhor forma pra você.",
+    "Sim. O prazo de cada aparelho aparece na página dele. Qualquer problema, é só falar com a loja.",
   ],
 ];
 

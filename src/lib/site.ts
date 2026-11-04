@@ -118,3 +118,18 @@ export const CONDITION_LABEL: Record<string, string> = {
   seminovo: "Seminovo",
   vitrine: "Vitrine",
 };
+
+export const ORDER_STATUS_LABEL: Record<string, string> = {
+  aguardando_pagamento: "Aguardando pagamento",
+  pago: "Pago",
+  separando: "Separando",
+  enviado: "Enviado",
+  entregue: "Entregue",
+  cancelado: "Cancelado",
+};
+
+export const PAYMENT_LABEL: Record<string, string> = {
+  pix: "Pix",
+  cartao: "Cartão de crédito",
+  boleto: "Boleto",
+};

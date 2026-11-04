@@ -7,11 +7,11 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { DB, Expense, Lead, LeadStatus, Product, Sale, Settings } from "./types";
+import type { DB, Expense, Lead, LeadStatus, Order, OrderStatus, Product, Sale, Settings } from "./types";
 import { createSeed } from "./seed";
 import { dayKey, uid } from "./format";
 
-const KEY = "brian-iphones:db:v1";
+const KEY = "brian-iphones:db:v2";
 const VISITOR_KEY = "brian-iphones:visitor";
 
 let cache: DB | null = null;
@@ -23,6 +23,8 @@ function load(): DB {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       cache = JSON.parse(raw) as DB;
+      // dados salvos antes da loja online não tinham pedidos
+      if (!cache.orders) cache.orders = [];
       return cache;
     }
   } catch {
@@ -109,6 +111,35 @@ export function deleteLead(id: string) {
   commit({ ...db, leads: db.leads.filter((l) => l.id !== id) });
 }
 
+/* ---------- Pedidos ---------- */
+export function addOrder(o: Omit<Order, "id" | "number" | "createdAt" | "status">) {
+  const db = load();
+  const seq = 1001 + db.orders.length;
+  const full: Order = { ...o, id: uid(), number: String(seq), createdAt: new Date().toISOString(), status: "aguardando_pagamento" };
+  // reserva o estoque
+  const products = db.products.map((p) => {
+    const it = o.items.find((i) => i.productId === p.id);
+    return it ? { ...p, stock: Math.max(0, p.stock - it.qty) } : p;
+  });
+  commit({ ...db, products, orders: [full, ...db.orders] });
+  return full;
+}
+
+export function setOrderStatus(id: string, status: OrderStatus) {
+  const db = load();
+  const order = db.orders.find((o) => o.id === id);
+  if (!order) return;
+  let products = db.products;
+  // cancelou: devolve ao estoque
+  if (status === "cancelado" && order.status !== "cancelado") {
+    products = products.map((p) => {
+      const it = order.items.find((i) => i.productId === p.id);
+      return it ? { ...p, stock: p.stock + it.qty } : p;
+    });
+  }
+  commit({ ...db, products, orders: db.orders.map((o) => (o.id === id ? { ...o, status } : o)) });
+}
+
 /* ---------- Financeiro ---------- */
 export function addSale(s: Omit<Sale, "id">) {
   const db = load();
@@ -139,7 +170,7 @@ export function resetDemo() {
 
 export function clearAll() {
   const seed = createSeed();
-  commit({ ...seed, leads: [], sales: [], expenses: [], visits: {} });
+  commit({ ...seed, leads: [], orders: [], sales: [], expenses: [], visits: {} });
 }
 
 /* ---------- Visitas ---------- */
