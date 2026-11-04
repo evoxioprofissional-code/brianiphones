@@ -1,25 +1,56 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/*
+ * Visual estilo loja Apple: fundo branco e cinza bem claro, texto quase preto,
+ * azul só nos detalhes, botões pretos em pílula, muito respiro.
+ */
 @theme {
-  --color-paper: #f2f0eb;
-  --color-paper-2: #e9e6df;
-  --color-card: #fbfaf7;
-  --color-ink: #0f0f10;
-  --color-ink-2: #1b1b1d;
-  --color-graphite: #3a3a3d;
-  --color-muted: #75736d;
-  --color-faint: #a9a69e;
-  --color-line: #d9d5cc;
-  --color-steel: #2c4a8a;
-  --color-steel-soft: #dfe5f1;
-  --color-ok: #2f6b3f;
-  --color-warn: #a2621b;
-  --color-bad: #a13a2c;
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f5f7;
+  --color-card: #ffffff;
+  --color-snow: #ffffff;
+  --color-mist: #f5f5f7;
+  --color-ink: #1d1d1f;
+  --color-ink-2: #2b2b2e;
+  --color-graphite: #424245;
+  --color-muted: #6e6e73;
+  --color-faint: #86868b;
+  --color-line: rgb(0 0 0 / 0.08);
+  --color-steel: #0071e3;
+  --color-steel-soft: #e8f2fd;
+  --color-accent: #0071e3;
+  --color-accent-2: #2997ff;
+  --color-accent-soft: #e8f2fd;
+  --color-pix: #1f8f7a;
+  --color-ok: #1f8a3e;
+  --color-warn: #b25e09;
+  --color-bad: #d70015;
 
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  /* tokens do shadcn/ui, apontando pras cores do site */
+  --color-background: #ffffff;
+  --color-foreground: #1d1d1f;
+  --color-primary: #1d1d1f;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5f5f7;
+  --color-secondary-foreground: #1d1d1f;
+  --color-destructive: #d70015;
+  --color-destructive-foreground: #ffffff;
+  --color-border: rgb(0 0 0 / 0.08);
+  --color-input: rgb(0 0 0 / 0.14);
+  --color-ring: #0071e3;
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-brand: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* variáveis no formato do shadcn (usadas pelo TiltCard) */
+:root {
+  --foreground: #1d1d1f;
+  --background: #ffffff;
 }
 
 @layer base {
@@ -27,37 +58,38 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    background: var(--color-paper);
+    background: #ffffff;
     color: var(--color-ink);
-    font-feature-settings: "ss01", "tnum" 0;
+    letter-spacing: -0.011em;
   }
   ::selection {
-    background: var(--color-ink);
-    color: var(--color-paper);
+    background: #b3d7ff;
+    color: var(--color-ink);
   }
   :focus-visible {
-    outline: 2px solid var(--color-steel);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
 }
 
+/* Títulos grandes, pesados e apertados */
 @utility display {
   font-family: var(--font-sans);
-  font-variation-settings: "wdth" 118;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.035em;
-  line-height: 0.92;
+  line-height: 1.04;
 }
 
 @utility wide {
   font-variation-settings: "wdth" 125;
 }
 
+/* Rótulo pequeno */
 @utility label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 @utility tabular {
@@ -68,10 +100,87 @@
   border-color: var(--color-line);
 }
 
+/* Prata (textos sobre fundo escuro) */
+@utility metal {
+  background: linear-gradient(180deg, #ffffff 0%, #e8e8ed 45%, #a1a1a6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Bloco escuro (lateral do admin, banners pretos) */
+@utility steel-dark {
+  --color-faint: #a1a1a6;
+  --color-muted: #a1a1a6;
+  --color-line: rgb(255 255 255 / 0.14);
+  background: radial-gradient(90% 70% at 70% 0%, #2a2a2e 0%, #161618 55%, #0b0b0c 100%);
+}
+
+/* Cartão cinza claro */
+@utility surface {
+  background: var(--color-mist);
+  border-radius: 18px;
+}
+
+/* Sombra ao passar o mouse: clara, azulada e espalhada, pra o card "acender" */
+@utility lift {
+  box-shadow:
+    0 0 0 1px rgb(0 113 227 / 0.08),
+    0 10px 24px -8px rgb(0 113 227 / 0.22),
+    0 30px 70px -18px rgb(41 151 255 / 0.45);
+}
+
+/* Botão azul */
+@utility btn-accent {
+  color: #fff;
+  background: var(--color-accent);
+  transition: background 0.2s, transform 0.2s;
+  &:hover {
+    background: #0077ed;
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Botão preto */
+@utility btn-ink {
+  color: #fff;
+  background: var(--color-ink);
+  transition: background 0.2s, transform 0.2s;
+  &:hover {
+    background: #000;
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Botão de contorno */
+@utility btn-outline {
+  color: var(--color-ink);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+  transition: background 0.2s, color 0.2s;
+  &:hover {
+    background: var(--color-ink);
+    color: #fff;
+  }
+}
+
+/* Fundo da foto do produto */
+@utility stage {
+  background: var(--color-mist);
+}
+
+@utility text-accent-grad {
+  color: var(--color-accent);
+}
+
 /* Reveal on scroll */
 .reveal {
   opacity: 0;
-  transform: translateY(14px);
+  transform: translateY(18px);
   transition:
     opacity 0.9s var(--ease-out-quint),
     transform 0.9s var(--ease-out-quint);
@@ -94,13 +203,43 @@
   animation: marquee 38s linear infinite;
 }
 
+/* Troca de slide do banner */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.slide-in {
+  animation: slide-in 0.8s var(--ease-out-quint) both;
+}
+@keyframes device-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px) rotate(24deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) rotate(18deg);
+  }
+}
+.device-in {
+  animation: device-in 1s var(--ease-out-quint) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1;
     transform: none;
     transition: none;
   }
-  .marquee-track {
+  .marquee-track,
+  .slide-in,
+  .device-in {
     animation: none;
   }
 }
@@ -137,4 +276,11 @@ input[type="range"].range::-moz-range-thumb {
 }
 .no-scrollbar {
   scrollbar-width: none;
+}
+
+/* Barra fixa de compra no celular: o rodapé ganha espaço pra não ficar escondido */
+@media (max-width: 1023px) {
+  body:has(.mobile-buybar) footer {
+    padding-bottom: 84px;
+  }
 }

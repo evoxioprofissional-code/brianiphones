@@ -10,6 +10,7 @@ import { ArrowUpRight } from "@/components/ui/Icons";
 
 const NAV = [
   { href: "/admin", label: "Painel" },
+  { href: "/admin/pedidos", label: "Pedidos" },
   { href: "/admin/produtos", label: "Produtos" },
   { href: "/admin/contatos", label: "Contatos" },
   { href: "/admin/financeiro", label: "Financeiro" },
@@ -37,10 +38,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   if (!logged) return <div className="min-h-dvh bg-paper" />;
 
   const newLeads = db?.leads.filter((l) => l.status === "novo").length ?? 0;
+  const openOrders = db?.orders.filter((o) => o.status === "pago" || o.status === "aguardando_pagamento").length ?? 0;
+  const badge: Record<string, number> = { "/admin/contatos": newLeads, "/admin/pedidos": openOrders };
 
   return (
-    <div className="min-h-dvh bg-paper lg:grid lg:grid-cols-[232px_1fr]">
-      <aside className="sticky top-0 z-30 border-b border-line bg-ink text-paper lg:h-dvh lg:border-b-0">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[232px_1fr]">
+      <aside className="sticky top-0 z-30 border-b border-line steel-dark bg-ink text-paper lg:h-dvh lg:border-b-0">
         <div className="flex h-14 items-center justify-between px-5 lg:h-20">
           <Link href="/admin">
             <Logo tone="paper" compact />
@@ -59,8 +62,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 {n.label}
-                {n.href === "/admin/contatos" && newLeads > 0 && (
-                  <span className="ml-3 rounded-full bg-paper px-1.5 text-[11px] font-semibold text-ink tabular">{newLeads}</span>
+                {badge[n.href] > 0 && (
+                  <span className="ml-3 rounded-full bg-paper px-1.5 text-[11px] font-semibold text-ink tabular">{badge[n.href]}</span>
                 )}
               </Link>
             );

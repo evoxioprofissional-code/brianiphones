@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TrocaPage() {
   return (
-    <section className="mx-auto max-w-[1320px] px-5 pb-28 pt-28 md:px-8 md:pt-36">
+    <section className="mx-auto max-w-[1320px] px-5 pb-28 pt-10 md:px-8 md:pt-14">
       <div className="grid gap-6 border-b border-line pb-10 md:grid-cols-12 md:items-end">
         <div className="md:col-span-8">
           <p className="label text-muted">Troca na entrada</p>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { REPAIR_SERVICES } from "@/lib/site";
 import { RepairForm } from "@/components/site/RepairForm";
 import { Reveal } from "@/components/site/Reveal";
+import { TiltCard } from "@/components/ui/be-ui-tilt-card";
 
 export const metadata: Metadata = {
   title: "Reparo",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export default function ReparoPage() {
   return (
     <>
-      <section className="mx-auto max-w-[1320px] px-5 pt-28 md:px-8 md:pt-36">
+      <section className="mx-auto max-w-[1320px] px-5 pt-10 md:px-8 md:pt-14">
         <div className="grid gap-6 border-b border-line pb-10 md:grid-cols-12 md:items-end">
           <div className="md:col-span-8">
             <p className="label text-muted">Reparo</p>
@@ -26,12 +27,14 @@ export default function ReparoPage() {
           </p>
         </div>
 
-        <div className="grid border-l border-line sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 pt-8 sm:grid-cols-2 lg:grid-cols-3">
           {REPAIR_SERVICES.map((s, i) => (
-            <Reveal key={s.code} delay={(i % 3) * 70} className="border-b border-r border-line p-6 md:p-8">
-              <p className="label text-faint">{s.code}</p>
-              <p className="display mt-10 text-[30px] md:text-[36px]">{s.title}</p>
-              <p className="mt-3 max-w-[320px] text-[14px] leading-[1.6] text-muted">{s.body}</p>
+            <Reveal key={s.code} delay={(i % 3) * 70}>
+              <TiltCard max={12} glareOpacity={0.1} className="h-full rounded-[18px] bg-mist p-6 md:p-8">
+                <p className="label text-faint">{s.code}</p>
+                <p className="display mt-10 text-[30px] md:text-[36px]">{s.title}</p>
+                <p className="mt-3 max-w-[320px] text-[14px] leading-[1.6] text-muted">{s.body}</p>
+              </TiltCard>
             </Reveal>
           ))}
         </div>
